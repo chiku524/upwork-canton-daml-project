@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useLedger } from '../hooks/useLedger'
 import { useWallet } from '../hooks/useWallet'
 import { useWebSocket } from '../hooks/useWebSocket'
+import { debounce } from '../utils/performance'
 
 export default function MarketsList() {
   const { ledger } = useLedger()
@@ -39,15 +40,15 @@ export default function MarketsList() {
 
     fetchMarkets()
 
-    // Poll for updates every 10 seconds if WebSocket is not connected
+    // Poll for updates every 15 seconds (reduced frequency to save resources)
     const pollInterval = setInterval(() => {
-      if (!wsConnected && ledger && wallet) {
+      if (ledger && wallet) {
         fetchMarkets()
       }
-    }, 10000)
+    }, 15000)
 
     return () => clearInterval(pollInterval)
-  }, [ledger, wallet, wsConnected])
+  }, [ledger, wallet])
 
   // Update markets when WebSocket data arrives
   useEffect(() => {
@@ -57,15 +58,26 @@ export default function MarketsList() {
     }
   }, [wsMarkets])
 
-  const getStatusClass = (status) => {
+  const getStatusClass = useMemo(() => {
     const statusMap = {
       Active: 'status-active',
       Resolving: 'status-resolving',
       Settled: 'status-settled',
       PendingApproval: 'status-pending',
     }
-    return statusMap[status] || 'status-pending'
-  }
+    return (status) => statusMap[status] || 'status-pending'
+  }, [])
+
+  // Memoize filtered/sorted markets for performance
+  const sortedMarkets = useMemo(() => {
+    return [...markets].sort((a, b) => {
+      // Sort by status (Active first) then by volume
+      const statusOrder = { Active: 0, Resolving: 1, PendingApproval: 2, Settled: 3 }
+      const statusDiff = (statusOrder[a.payload.status] || 99) - (statusOrder[b.payload.status] || 99)
+      if (statusDiff !== 0) return statusDiff
+      return (b.payload.totalVolume || 0) - (a.payload.totalVolume || 0)
+    })
+  }, [markets])
 
   if (loading) {
     return (
@@ -113,7 +125,7 @@ export default function MarketsList() {
         </div>
       ) : (
         <div className="market-grid">
-          {markets.map((market) => (
+          {sortedMarkets.map((market) => (
             <Link
               key={market.contractId}
               to={`/market/${market.payload.marketId}`}

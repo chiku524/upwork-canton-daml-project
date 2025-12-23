@@ -12,6 +12,7 @@ const CreateMarket = lazy(() => import('./components/CreateMarket'))
 const WalletConnect = lazy(() => import('./components/WalletConnect'))
 const Portfolio = lazy(() => import('./components/Portfolio'))
 import { analytics } from './utils/analytics'
+import ConnectionStatus from './components/ConnectionStatus'
 import './App.css'
 
 // Component to track page views
@@ -72,6 +73,7 @@ function App() {
             )}
           </div>
         </main>
+        <ConnectionStatus />
       </div>
     </Router>
   )
