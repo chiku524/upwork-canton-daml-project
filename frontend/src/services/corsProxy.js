@@ -3,19 +3,18 @@
  * Provides fallback CORS proxy when Vercel API routes aren't available
  */
 
-// List of public CORS proxy services (fallback options)
-// Note: These are public proxies and may have rate limits
-// Using services that support POST requests
+// Note: Public CORS proxies are unreliable and often blocked
+// The best solution is to configure Vercel API routes properly
+// This is a temporary fallback that may not work
+
+// Disable CORS proxy by default - it's too unreliable
+const CORS_PROXY_ENABLED = false
+
 const CORS_PROXIES = [
   {
     name: 'cors-anywhere',
     format: (url) => `https://cors-anywhere.herokuapp.com/${url}`,
     supportsPost: true,
-  },
-  {
-    name: 'allorigins',
-    format: (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    supportsPost: false, // Only supports GET
   },
 ]
 
@@ -46,6 +45,11 @@ function rotateProxy() {
  * @returns {Promise<Response>} Fetch response
  */
 export async function fetchWithProxy(url, options = {}) {
+  // CORS proxy is disabled by default due to reliability issues
+  if (!CORS_PROXY_ENABLED) {
+    throw new Error('CORS proxy is disabled. Please configure Vercel API routes. See docs/VERCEL_FIX.md for instructions.')
+  }
+  
   // Find a proxy that supports the request method
   const method = options.method || 'GET'
   const needsPost = method === 'POST' || method === 'PUT' || method === 'PATCH'

@@ -81,45 +81,18 @@ class LedgerClient {
             return []
           }
         } catch (apiError) {
-          // If Vercel API route returns 404, use CORS proxy as fallback
+          // If Vercel API route returns 404, API routes aren't configured
           if (this.useProxy && apiError.response?.status === 404) {
-            console.warn('Vercel API route not found, using CORS proxy fallback...')
-            
-            try {
-              const targetUrl = `${this.baseUrl}/v1/query`
-              const proxyResponse = await fetchWithProxy(targetUrl, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  templateIds,
-                  query,
-                }),
-              })
-              
-              // Handle proxy response
-              if (!proxyResponse.ok) {
-                // If it's a 4xx from the target API, that's okay - return empty array
-                if (proxyResponse.status >= 400 && proxyResponse.status < 500) {
-                  return []
-                }
-                throw new Error(`Proxy returned ${proxyResponse.status}`)
-              }
-              
-              const data = await proxyResponse.json()
-              return data.result || []
-            } catch (proxyError) {
-              // If proxy also fails, return empty array instead of throwing
-              // This allows the app to continue working
-              console.error('CORS proxy failed, returning empty result:', proxyError.message)
-              return [] // Return empty array so app doesn't break
-            }
+            console.warn('Vercel API route not found. Please configure API routes. See docs/VERCEL_FIX.md')
+            // Return empty array so app doesn't break
+            // User will see empty state and API status banner
+            return []
           }
-          // For other errors, also return empty array to prevent app breakage
+          // For other client errors (4xx), return empty array
           if (apiError.response?.status >= 400 && apiError.response?.status < 500) {
             return [] // Client errors - return empty instead of breaking
           }
+          // For server errors (5xx) or network errors, throw to trigger retry
           throw apiError
         }
       }, {
@@ -167,32 +140,10 @@ class LedgerClient {
           })
           return response.data
         } catch (apiError) {
-          // If Vercel API route returns 404, use CORS proxy as fallback
+          // If Vercel API route returns 404, API routes aren't configured
           if (this.useProxy && apiError.response?.status === 404) {
-            console.warn('Vercel API route not found, using CORS proxy fallback...')
-            
-            try {
-              const targetUrl = `${this.baseUrl}/v1/command`
-              const proxyResponse = await fetchWithProxy(targetUrl, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  commands,
-                }),
-              })
-              
-              if (!proxyResponse.ok) {
-                throw new Error(`Proxy returned ${proxyResponse.status}`)
-              }
-              
-              return await proxyResponse.json()
-            } catch (proxyError) {
-              console.error('CORS proxy failed:', proxyError)
-              // Re-throw for commands since they're critical
-              throw new Error(`Failed to submit command. API routes not configured. Please set up Vercel API routes or enable CORS on Canton participant.`)
-            }
+            console.error('Vercel API route not found. Commands require API routes to be configured.')
+            throw new Error('API routes not configured. Please set up Vercel API routes. See docs/VERCEL_FIX.md for instructions.')
           }
           throw apiError
         }

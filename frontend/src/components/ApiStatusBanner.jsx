@@ -38,10 +38,12 @@ export default function ApiStatusBanner() {
         <div style={{ flex: 1 }}>
           <strong>⚠️ API Routes Not Configured</strong>
           <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', opacity: 0.9 }}>
-            Vercel API routes are not working. The app is using a fallback proxy which may be slower.
+            Vercel API routes are not configured. Queries will return empty results and commands will fail.
             <br />
             <small>
-              See <a href="/docs/VERCEL_FIX.md" target="_blank" style={{ color: 'white', textDecoration: 'underline' }}>documentation</a> to fix this.
+              <strong>To fix:</strong> Ensure API routes at project root <code>/api/</code> are deployed, or enable CORS on the Canton participant.
+              <br />
+              See <a href="https://github.com/chiku524/upwork-canton-daml-project/blob/main/docs/VERCEL_FIX.md" target="_blank" rel="noopener noreferrer" style={{ color: 'white', textDecoration: 'underline' }}>documentation</a> for details.
             </small>
           </p>
         </div>
