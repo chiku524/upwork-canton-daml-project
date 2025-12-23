@@ -2,6 +2,7 @@ import axios from 'axios'
 import { formatError } from '../utils/errorHandler'
 import { retryWithBackoff } from '../utils/retry'
 import { cache, Cache } from '../utils/cache'
+import { fetchWithProxy } from './corsProxy'
 
 // Import axios for fallback direct connections
 const axiosDirect = axios.create()
@@ -65,18 +66,51 @@ class LedgerClient {
       const result = await retryWithBackoff(async () => {
         const endpoint = this.useProxy ? '/api/query' : `${this.baseUrl}/v1/query`
         
-        const response = await this.client.post(endpoint, {
-          templateIds,
-          query,
-        })
-        
-        // Handle both direct API response and proxy response
-        if (response.data.result) {
-          return response.data.result
-        } else if (Array.isArray(response.data)) {
-          return response.data
-        } else {
-          return []
+        try {
+          const response = await this.client.post(endpoint, {
+            templateIds,
+            query,
+          })
+          
+          // Handle both direct API response and proxy response
+          if (response.data.result) {
+            return response.data.result
+          } else if (Array.isArray(response.data)) {
+            return response.data
+          } else {
+            return []
+          }
+        } catch (apiError) {
+          // If Vercel API route returns 404, use CORS proxy as fallback
+          if (this.useProxy && apiError.response?.status === 404) {
+            console.warn('Vercel API route not found, using CORS proxy fallback...')
+            
+            try {
+              const targetUrl = `${this.baseUrl}/v1/query`
+              const proxyResponse = await fetchWithProxy(targetUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  templateIds,
+                  query,
+                }),
+              })
+              
+              if (!proxyResponse.ok) {
+                throw new Error(`Proxy returned ${proxyResponse.status}`)
+              }
+              
+              const data = await proxyResponse.json()
+              return data.result || []
+            } catch (proxyError) {
+              // If proxy also fails, throw original error
+              console.error('CORS proxy also failed:', proxyError)
+              throw apiError
+            }
+          }
+          throw apiError
         }
       }, {
         maxRetries: 2,
@@ -116,10 +150,41 @@ class LedgerClient {
       // Retry with exponential backoff for commands
       const result = await retryWithBackoff(async () => {
         const endpoint = this.useProxy ? '/api/command' : `${this.baseUrl}/v1/command`
-        const response = await this.client.post(endpoint, {
-          commands,
-        })
-        return response.data
+        
+        try {
+          const response = await this.client.post(endpoint, {
+            commands,
+          })
+          return response.data
+        } catch (apiError) {
+          // If Vercel API route returns 404, use CORS proxy as fallback
+          if (this.useProxy && apiError.response?.status === 404) {
+            console.warn('Vercel API route not found, using CORS proxy fallback...')
+            
+            try {
+              const targetUrl = `${this.baseUrl}/v1/command`
+              const proxyResponse = await fetchWithProxy(targetUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  commands,
+                }),
+              })
+              
+              if (!proxyResponse.ok) {
+                throw new Error(`Proxy returned ${proxyResponse.status}`)
+              }
+              
+              return await proxyResponse.json()
+            } catch (proxyError) {
+              console.error('CORS proxy also failed:', proxyError)
+              throw apiError
+            }
+          }
+          throw apiError
+        }
       }, {
         maxRetries: 2, // Fewer retries for commands (they're more critical)
         initialDelay: 1000,
