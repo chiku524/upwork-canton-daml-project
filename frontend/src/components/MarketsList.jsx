@@ -41,11 +41,35 @@ export default function MarketsList() {
   }
 
   if (loading) {
-    return <div className="loading">Loading markets...</div>
+    return (
+      <div className="loading">
+        <p>Loading markets...</p>
+        <p style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '0.5rem' }}>
+          Connecting to Canton ledger...
+        </p>
+      </div>
+    )
   }
 
   if (error) {
-    return <div className="error">Error: {error}</div>
+    return (
+      <div>
+        <div className="error">
+          <strong>Error loading markets:</strong> {error}
+          <br />
+          <small style={{ marginTop: '0.5rem', display: 'block' }}>
+            Please check your connection and try again. If the problem persists, the ledger may be temporarily unavailable.
+          </small>
+        </div>
+        <button 
+          className="btn-primary" 
+          onClick={() => window.location.reload()}
+          style={{ marginTop: '1rem' }}
+        >
+          Retry
+        </button>
+      </div>
+    )
   }
 
   return (

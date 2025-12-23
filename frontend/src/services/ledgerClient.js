@@ -1,16 +1,27 @@
 import axios from 'axios'
+import { formatError } from '../utils/errorHandler'
 
 const LEDGER_URL = import.meta.env.VITE_LEDGER_URL || 'https://participant.dev.canton.wolfedgelabs.com'
 
+// Use proxy API routes in production to avoid CORS issues
+const USE_PROXY = import.meta.env.PROD || window.location.hostname !== 'localhost'
+
 /**
  * Simple client for Canton JSON API
+ * Uses proxy API routes in production to avoid CORS issues
  */
 class LedgerClient {
   constructor(baseUrl = LEDGER_URL, token = null) {
     this.baseUrl = baseUrl
     this.token = token
+    this.useProxy = USE_PROXY
+    
+    // For proxy routes, use relative URLs
+    // For direct calls (dev), use the full base URL
+    const apiBaseUrl = this.useProxy ? '' : baseUrl
+    
     this.client = axios.create({
-      baseURL: baseUrl,
+      baseURL: apiBaseUrl,
       headers: {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
@@ -26,14 +37,18 @@ class LedgerClient {
    */
   async query(templateIds, query = {}) {
     try {
-      const response = await this.client.post('/v1/query', {
+      const endpoint = this.useProxy ? '/api/query' : `${this.baseUrl}/v1/query`
+      const response = await this.client.post(endpoint, {
         templateIds,
         query,
       })
       return response.data.result || []
     } catch (error) {
       console.error('Query error:', error)
-      throw error
+      // Format error for better user experience
+      const formattedError = new Error(formatError(error))
+      formattedError.originalError = error
+      throw formattedError
     }
   }
 
@@ -44,13 +59,17 @@ class LedgerClient {
    */
   async submitCommand(commands) {
     try {
-      const response = await this.client.post('/v1/command', {
+      const endpoint = this.useProxy ? '/api/command' : `${this.baseUrl}/v1/command`
+      const response = await this.client.post(endpoint, {
         commands,
       })
       return response.data
     } catch (error) {
       console.error('Command error:', error)
-      throw error
+      // Format error for better user experience
+      const formattedError = new Error(formatError(error))
+      formattedError.originalError = error
+      throw formattedError
     }
   }
 

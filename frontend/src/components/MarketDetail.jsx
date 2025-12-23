@@ -65,16 +65,34 @@ export default function MarketDetail() {
   }
 
   if (loading) {
-    return <div className="loading">Loading market...</div>
+    return (
+      <div className="loading">
+        <p>Loading market...</p>
+        <p style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '0.5rem' }}>
+          Fetching market details...
+        </p>
+      </div>
+    )
   }
 
   if (error || !market) {
     return (
       <div>
-        <div className="error">{error || 'Market not found'}</div>
-        <button className="btn-secondary" onClick={() => navigate('/')}>
-          Back to Markets
-        </button>
+        <div className="error">
+          <strong>Error:</strong> {error || 'Market not found'}
+          <br />
+          <small style={{ marginTop: '0.5rem', display: 'block' }}>
+            The market may not exist or there was a connection error.
+          </small>
+        </div>
+        <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
+          <button className="btn-secondary" onClick={() => navigate('/')}>
+            Back to Markets
+          </button>
+          <button className="btn-primary" onClick={() => window.location.reload()}>
+            Retry
+          </button>
+        </div>
       </div>
     )
   }

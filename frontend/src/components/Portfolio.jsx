@@ -30,11 +30,35 @@ export default function Portfolio() {
   }, [ledger, wallet])
 
   if (loading) {
-    return <div className="loading">Loading portfolio...</div>
+    return (
+      <div className="loading">
+        <p>Loading portfolio...</p>
+        <p style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '0.5rem' }}>
+          Fetching your positions...
+        </p>
+      </div>
+    )
   }
 
   if (error) {
-    return <div className="error">Error: {error}</div>
+    return (
+      <div>
+        <div className="error">
+          <strong>Error loading portfolio:</strong> {error}
+          <br />
+          <small style={{ marginTop: '0.5rem', display: 'block' }}>
+            Please check your connection and try again.
+          </small>
+        </div>
+        <button 
+          className="btn-primary" 
+          onClick={() => window.location.reload()}
+          style={{ marginTop: '1rem' }}
+        >
+          Retry
+        </button>
+      </div>
+    )
   }
 
   return (
