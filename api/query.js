@@ -1,6 +1,14 @@
 // Vercel serverless function to proxy Canton JSON API queries
 // Located at project root /api/ directory (Vercel requirement)
 export default async function handler(req, res) {
+  // Log for debugging
+  console.log('[api/query] Request received:', {
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    body: req.body,
+  })
+
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true)
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -12,12 +20,14 @@ export default async function handler(req, res) {
 
   // Handle preflight
   if (req.method === 'OPTIONS') {
+    console.log('[api/query] Handling OPTIONS preflight')
     return res.status(200).end()
   }
 
   // Only allow POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    console.log('[api/query] Method not allowed:', req.method)
+    return res.status(405).json({ error: 'Method not allowed', received: req.method })
   }
 
   const LEDGER_URL = process.env.VITE_LEDGER_URL || 'https://participant.dev.canton.wolfedgelabs.com'
