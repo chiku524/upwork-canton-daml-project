@@ -129,6 +129,11 @@ export default function MarketDetail() {
         </div>
       </div>
 
+      {/* Market Resolution Component (for admins) */}
+      {marketData.status === 'Active' && wallet?.party === 'Admin' && (
+        <MarketResolution market={market} onResolved={() => window.location.reload()} />
+      )}
+
       {marketData.status === 'Active' && (
         <div className="card" style={{ marginTop: '2rem' }}>
           <h2>Create Position</h2>
