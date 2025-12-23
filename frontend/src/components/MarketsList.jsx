@@ -17,24 +17,8 @@ export default function MarketsList() {
       try {
         setLoading(true)
         // Query active markets from the ledger
-        // This would use the actual DAML query API
-        const response = await fetch('https://participant.dev.canton.wolfedgelabs.com/v1/query', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            templateIds: ['PredictionMarkets:Market'],
-            query: {},
-          }),
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch markets')
-        }
-
-        const data = await response.json()
-        setMarkets(data.result || [])
+        const markets = await ledger.query(['PredictionMarkets:Market'], {})
+        setMarkets(markets)
       } catch (err) {
         setError(err.message)
         console.error('Error fetching markets:', err)

@@ -43,45 +43,26 @@ export default function CreateMarket() {
         ? { tag: 'EventBased', value: formData.resolutionCriteria }
         : { tag: 'Manual' }
 
-      const response = await fetch('https://participant.dev.canton.wolfedgelabs.com/v1/command', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      await ledger.create(
+        'PredictionMarkets:MarketCreationRequest',
+        {
+          creator: wallet.party,
+          admin: 'Admin', // Would be fetched from config
+          marketId: `market-${Date.now()}`,
+          title: formData.title,
+          description: formData.description,
+          marketType: formData.marketType === 'Binary' ? { tag: 'Binary' } : { tag: 'MultiOutcome' },
+          outcomes: outcomes,
+          settlementTrigger: settlementTrigger,
+          resolutionCriteria: formData.resolutionCriteria,
+          depositAmount: 100.0,
+          depositCid: null, // Would need to create holding first
+          configCid: null, // Would need to fetch from config
+          creatorAccount: null,
+          adminAccount: null,
         },
-        body: JSON.stringify({
-          commands: {
-            party: wallet.party,
-            applicationId: 'prediction-markets',
-            commandId: `create-market-${Date.now()}`,
-            list: [
-              {
-                templateId: 'PredictionMarkets:MarketCreationRequest',
-                payload: {
-                  creator: wallet.party,
-                  admin: 'Admin', // Would be fetched from config
-                  marketId: `market-${Date.now()}`,
-                  title: formData.title,
-                  description: formData.description,
-                  marketType: formData.marketType === 'Binary' ? { tag: 'Binary' } : { tag: 'MultiOutcome' },
-                  outcomes: outcomes,
-                  settlementTrigger: settlementTrigger,
-                  resolutionCriteria: formData.resolutionCriteria,
-                  depositAmount: 100.0,
-                  depositCid: null, // Would need to create holding first
-                  configCid: null, // Would need to fetch from config
-                  creatorAccount: null,
-                  adminAccount: null,
-                },
-              },
-            ],
-          },
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create market')
-      }
+        wallet.party
+      )
 
       setSuccess(true)
       setTimeout(() => {

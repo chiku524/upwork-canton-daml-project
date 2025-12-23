@@ -12,8 +12,6 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@digitalasset/daml-json-types": "^2.8.0",
-    "@digitalasset/daml-ledger": "^2.8.0",
     "@tanstack/react-query": "^5.0.0",
     "zustand": "^4.4.0",
     "axios": "^1.6.0",

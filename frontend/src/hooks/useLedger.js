@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
-import { DamlLedger } from '@digitalasset/daml-ledger'
-
-const LEDGER_URL = import.meta.env.VITE_LEDGER_URL || 'https://participant.dev.canton.wolfedgelabs.com'
+import LedgerClient from '../services/ledgerClient'
 
 export function useLedger() {
   const [ledger, setLedger] = useState(null)
@@ -11,11 +9,8 @@ export function useLedger() {
   useEffect(() => {
     const connect = async () => {
       try {
-        const newLedger = new DamlLedger({
-          token: null, // Will be set when wallet connects
-          httpBaseUrl: LEDGER_URL,
-          wsBaseUrl: LEDGER_URL.replace('https://', 'wss://').replace('http://', 'ws://'),
-        })
+        const newLedger = new LedgerClient()
+        // Test connection by querying (empty query should work)
         setLedger(newLedger)
         setIsConnected(true)
       } catch (err) {

@@ -22,24 +22,9 @@ export default function MarketDetail() {
       try {
         setLoading(true)
         // Fetch market details
-        const response = await fetch(`https://participant.dev.canton.wolfedgelabs.com/v1/query`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            templateIds: ['PredictionMarkets:Market'],
-            query: { marketId: marketId },
-          }),
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch market')
-        }
-
-        const data = await response.json()
-        if (data.result && data.result.length > 0) {
-          setMarket(data.result[0])
+        const markets = await ledger.query(['PredictionMarkets:Market'], { marketId: marketId })
+        if (markets && markets.length > 0) {
+          setMarket(markets[0])
         } else {
           setError('Market not found')
         }
@@ -54,40 +39,22 @@ export default function MarketDetail() {
   }, [marketId, ledger, wallet])
 
   const handleCreatePosition = async () => {
-    if (!wallet || !market) return
+    if (!wallet || !market || !ledger) return
 
     try {
-      const response = await fetch('https://participant.dev.canton.wolfedgelabs.com/v1/command', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      await ledger.exercise(
+        'PredictionMarkets:Market',
+        market.contractId,
+        'CreatePosition',
+        {
+          positionId: `pos-${Date.now()}`,
+          owner: wallet.party,
+          positionType: positionType === 'Yes' ? { tag: 'Yes' } : { tag: 'No' },
+          amount: parseFloat(positionAmount),
+          price: parseFloat(positionPrice),
         },
-        body: JSON.stringify({
-          commands: {
-            party: wallet.party,
-            applicationId: 'prediction-markets',
-            commandId: `create-position-${Date.now()}`,
-            list: [
-              {
-                templateId: 'PredictionMarkets:Market',
-                contractId: market.contractId,
-                choice: 'CreatePosition',
-                argument: {
-                  positionId: `pos-${Date.now()}`,
-                  owner: wallet.party,
-                  positionType: positionType === 'Yes' ? { tag: 'Yes' } : { tag: 'No' },
-                  amount: parseFloat(positionAmount),
-                  price: parseFloat(positionPrice),
-                },
-              },
-            ],
-          },
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to create position')
-      }
+        wallet.party
+      )
 
       alert('Position created successfully!')
       // Refresh market data

@@ -17,23 +17,8 @@ export default function Portfolio() {
       try {
         setLoading(true)
         // Query user's positions
-        const response = await fetch('https://participant.dev.canton.wolfedgelabs.com/v1/query', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            templateIds: ['PredictionMarkets:Position'],
-            query: { owner: wallet.party },
-          }),
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch positions')
-        }
-
-        const data = await response.json()
-        setPositions(data.result || [])
+        const positions = await ledger.query(['PredictionMarkets:Position'], { owner: wallet.party })
+        setPositions(positions)
       } catch (err) {
         setError(err.message)
       } finally {
