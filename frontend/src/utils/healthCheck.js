@@ -8,6 +8,16 @@
  */
 export async function checkApiHealth() {
   try {
+    // First check the health endpoint
+    const healthResponse = await fetch('/api/health', {
+      method: 'GET',
+    })
+    
+    if (healthResponse.ok) {
+      return true
+    }
+
+    // Fallback: try the query endpoint
     const response = await fetch('/api/query', {
       method: 'POST',
       headers: {

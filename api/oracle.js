@@ -1,5 +1,5 @@
 // Vercel serverless function to proxy RedStone Oracle API requests
-// This helps avoid CORS issues and can add authentication/rate limiting
+// This file is in frontend/api/ to match the root directory setting
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true)
@@ -48,4 +48,3 @@ export default async function handler(req, res) {
     })
   }
 }
-

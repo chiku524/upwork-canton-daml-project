@@ -65,44 +65,30 @@ class LedgerClient {
       const result = await retryWithBackoff(async () => {
         const endpoint = this.useProxy ? '/api/query' : `${this.baseUrl}/v1/query`
         
-        try {
-          const response = await this.client.post(endpoint, {
-            templateIds,
-            query,
-          })
-          
-          // Handle both direct API response and proxy response
-          if (response.data.result) {
-            return response.data.result
-          } else if (Array.isArray(response.data)) {
-            return response.data
-          } else {
-            return []
-          }
-        } catch (apiError) {
-          // If proxy fails, try direct connection as fallback
-          if (this.useProxy && apiError.response?.status === 404) {
-            console.warn('Proxy API not found, trying direct connection (may have CORS issues)...')
-            try {
-              const directResponse = await axiosDirect.post(`${this.baseUrl}/v1/query`, {
-                templateIds,
-                query,
-              }, {
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              })
-              return directResponse.data.result || []
-            } catch (directError) {
-              // If direct also fails, throw original error
-              throw apiError
-            }
-          }
-          throw apiError
+        const response = await this.client.post(endpoint, {
+          templateIds,
+          query,
+        })
+        
+        // Handle both direct API response and proxy response
+        if (response.data.result) {
+          return response.data.result
+        } else if (Array.isArray(response.data)) {
+          return response.data
+        } else {
+          return []
         }
       }, {
-        maxRetries: 2, // Reduced retries
+        maxRetries: 2,
         initialDelay: 1000,
+        shouldRetry: (error) => {
+          // Don't retry on 404 - API route doesn't exist
+          if (error.response?.status === 404) {
+            return false
+          }
+          // Retry on network errors and 5xx errors
+          return error.code === 'ERR_NETWORK' || (error.response?.status >= 500)
+        }
       })
 
       // Cache the result
