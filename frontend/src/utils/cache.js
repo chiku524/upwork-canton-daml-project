@@ -69,5 +69,6 @@ class Cache {
 export const cache = new Cache()
 
 // Export class for custom instances
+export { Cache }
 export default Cache
 

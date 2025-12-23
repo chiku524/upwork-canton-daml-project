@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useLedger } from '../hooks/useLedger'
 import { useWallet } from '../hooks/useWallet'
+import MarketResolution from './MarketResolution'
 
 export default function MarketDetail() {
   const { marketId } = useParams()
