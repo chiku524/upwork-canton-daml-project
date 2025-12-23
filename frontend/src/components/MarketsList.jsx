@@ -11,11 +11,12 @@ export default function MarketsList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Use WebSocket for real-time updates (optional, falls back to polling)
+  // WebSocket disabled by default (falls back to polling)
+  // Enable in useWebSocket.js if WebSocket support is needed
   const { data: wsMarkets, connected: wsConnected } = useWebSocket(
     ['PredictionMarkets:Market'],
     {},
-    ledger && wallet // Only enable if ledger and wallet are available
+    false // Disabled - using polling instead
   )
 
   useEffect(() => {

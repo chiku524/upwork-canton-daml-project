@@ -3,6 +3,9 @@ import { formatError } from '../utils/errorHandler'
 import { retryWithBackoff } from '../utils/retry'
 import { cache, Cache } from '../utils/cache'
 
+// Import axios for fallback direct connections
+const axiosDirect = axios.create()
+
 const LEDGER_URL = import.meta.env.VITE_LEDGER_URL || 'https://participant.dev.canton.wolfedgelabs.com'
 
 // Use proxy API routes in production to avoid CORS issues
@@ -61,13 +64,44 @@ class LedgerClient {
       // Retry with exponential backoff
       const result = await retryWithBackoff(async () => {
         const endpoint = this.useProxy ? '/api/query' : `${this.baseUrl}/v1/query`
-        const response = await this.client.post(endpoint, {
-          templateIds,
-          query,
-        })
-        return response.data.result || []
+        
+        try {
+          const response = await this.client.post(endpoint, {
+            templateIds,
+            query,
+          })
+          
+          // Handle both direct API response and proxy response
+          if (response.data.result) {
+            return response.data.result
+          } else if (Array.isArray(response.data)) {
+            return response.data
+          } else {
+            return []
+          }
+        } catch (apiError) {
+          // If proxy fails, try direct connection as fallback
+          if (this.useProxy && apiError.response?.status === 404) {
+            console.warn('Proxy API not found, trying direct connection (may have CORS issues)...')
+            try {
+              const directResponse = await axiosDirect.post(`${this.baseUrl}/v1/query`, {
+                templateIds,
+                query,
+              }, {
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              })
+              return directResponse.data.result || []
+            } catch (directError) {
+              // If direct also fails, throw original error
+              throw apiError
+            }
+          }
+          throw apiError
+        }
       }, {
-        maxRetries: 3,
+        maxRetries: 2, // Reduced retries
         initialDelay: 1000,
       })
 
