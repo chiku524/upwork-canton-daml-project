@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { useLedger } from './hooks/useLedger'
 import { useWallet } from './hooks/useWallet'
-import MarketsList from './components/MarketsList'
-import MarketDetail from './components/MarketDetail'
-import CreateMarket from './components/CreateMarket'
-import WalletConnect from './components/WalletConnect'
-import Portfolio from './components/Portfolio'
+import { lazy, Suspense } from 'react'
+import LoadingSpinner from './components/LoadingSpinner'
+
+// Lazy load components for code splitting
+const MarketsList = lazy(() => import('./components/MarketsList'))
+const MarketDetail = lazy(() => import('./components/MarketDetail'))
+const CreateMarket = lazy(() => import('./components/CreateMarket'))
+const WalletConnect = lazy(() => import('./components/WalletConnect'))
+const Portfolio = lazy(() => import('./components/Portfolio'))
 import { analytics } from './utils/analytics'
 import './App.css'
 
@@ -53,14 +57,18 @@ function App() {
         <main className="app-main">
           <div className="container">
             {!wallet ? (
-              <WalletConnect onConnect={connectWallet} />
+              <Suspense fallback={<LoadingSpinner message="Loading..." />}>
+                <WalletConnect onConnect={connectWallet} />
+              </Suspense>
             ) : (
-              <Routes>
-                <Route path="/" element={<MarketsList />} />
-                <Route path="/market/:marketId" element={<MarketDetail />} />
-                <Route path="/create" element={<CreateMarket />} />
-                <Route path="/portfolio" element={<Portfolio />} />
-              </Routes>
+              <Suspense fallback={<LoadingSpinner message="Loading..." />}>
+                <Routes>
+                  <Route path="/" element={<MarketsList />} />
+                  <Route path="/market/:marketId" element={<MarketDetail />} />
+                  <Route path="/create" element={<CreateMarket />} />
+                  <Route path="/portfolio" element={<Portfolio />} />
+                </Routes>
+              </Suspense>
             )}
           </div>
         </main>
