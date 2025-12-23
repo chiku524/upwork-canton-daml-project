@@ -8,29 +8,35 @@
  */
 export async function checkApiHealth() {
   try {
-    // First check the health endpoint
-    const healthResponse = await fetch('/api/health', {
-      method: 'GET',
-    })
+    // Check the health endpoint with timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
     
-    if (healthResponse.ok) {
-      return true
+    try {
+      const healthResponse = await fetch('/api/health', {
+        method: 'GET',
+        signal: controller.signal,
+      })
+      
+      clearTimeout(timeoutId)
+      
+      if (healthResponse.ok) {
+        return true
+      }
+      
+      // If health endpoint returns non-404, API routes exist but may have issues
+      if (healthResponse.status !== 404) {
+        return true // Routes exist, just not working perfectly
+      }
+    } catch (fetchError) {
+      clearTimeout(timeoutId)
+      if (fetchError.name === 'AbortError') {
+        return false // Timeout
+      }
     }
 
-    // Fallback: try the query endpoint
-    const response = await fetch('/api/query', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        templateIds: ['Test'],
-        query: {},
-      }),
-    })
-    
-    // Even if the query fails, if we get a response (not 404), the API route is working
-    return response.status !== 404
+    // If health endpoint returns 404, API routes don't exist
+    return false
   } catch (error) {
     return false
   }

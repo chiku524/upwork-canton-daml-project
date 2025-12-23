@@ -13,6 +13,7 @@ const WalletConnect = lazy(() => import('./components/WalletConnect'))
 const Portfolio = lazy(() => import('./components/Portfolio'))
 import { analytics } from './utils/analytics'
 import ConnectionStatus from './components/ConnectionStatus'
+import ApiStatusBanner from './components/ApiStatusBanner'
 import './App.css'
 
 // Component to track page views
@@ -33,6 +34,7 @@ function App() {
   return (
     <Router>
       <PageViewTracker />
+      <ApiStatusBanner />
       <div className="app">
         <header className="app-header">
           <div className="container">

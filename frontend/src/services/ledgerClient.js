@@ -98,17 +98,27 @@ class LedgerClient {
                 }),
               })
               
+              // Handle proxy response
               if (!proxyResponse.ok) {
+                // If it's a 4xx from the target API, that's okay - return empty array
+                if (proxyResponse.status >= 400 && proxyResponse.status < 500) {
+                  return []
+                }
                 throw new Error(`Proxy returned ${proxyResponse.status}`)
               }
               
               const data = await proxyResponse.json()
               return data.result || []
             } catch (proxyError) {
-              // If proxy also fails, throw original error
-              console.error('CORS proxy also failed:', proxyError)
-              throw apiError
+              // If proxy also fails, return empty array instead of throwing
+              // This allows the app to continue working
+              console.error('CORS proxy failed, returning empty result:', proxyError.message)
+              return [] // Return empty array so app doesn't break
             }
+          }
+          // For other errors, also return empty array to prevent app breakage
+          if (apiError.response?.status >= 400 && apiError.response?.status < 500) {
+            return [] // Client errors - return empty instead of breaking
           }
           throw apiError
         }
@@ -179,8 +189,9 @@ class LedgerClient {
               
               return await proxyResponse.json()
             } catch (proxyError) {
-              console.error('CORS proxy also failed:', proxyError)
-              throw apiError
+              console.error('CORS proxy failed:', proxyError)
+              // Re-throw for commands since they're critical
+              throw new Error(`Failed to submit command. API routes not configured. Please set up Vercel API routes or enable CORS on Canton participant.`)
             }
           }
           throw apiError

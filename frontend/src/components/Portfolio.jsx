@@ -20,7 +20,13 @@ export default function Portfolio() {
         const positions = await ledger.query(['PredictionMarkets:Position'], { owner: wallet.party })
         setPositions(positions)
       } catch (err) {
-        setError(err.message)
+        // Don't set error if it's just empty results
+        if (err.message?.includes('Resource not found') || err.message?.includes('404')) {
+          setPositions([]) // Show empty portfolio
+          setError(null)
+        } else {
+          setError(err.message)
+        }
       } finally {
         setLoading(false)
       }

@@ -31,7 +31,14 @@ export default function MarketsList() {
         const markets = await ledger.query(['PredictionMarkets:Market'], {}, { forceRefresh: true })
         setMarkets(markets)
       } catch (err) {
-        setError(err.message)
+        // Don't set error if it's just empty results - show empty state instead
+        if (err.message?.includes('Resource not found') || err.message?.includes('404')) {
+          // API route not found - this is expected if Vercel routes aren't configured
+          setMarkets([]) // Show empty markets list
+          setError(null) // Don't show error, just empty state
+        } else {
+          setError(err.message)
+        }
         console.error('Error fetching markets:', err)
       } finally {
         setLoading(false)

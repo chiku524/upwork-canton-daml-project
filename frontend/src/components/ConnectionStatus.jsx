@@ -10,9 +10,14 @@ export default function ConnectionStatus() {
 
   useEffect(() => {
     const checkConnection = async () => {
-      const isHealthy = await checkApiHealth()
-      setStatus(isHealthy ? 'connected' : 'disconnected')
-      setLastCheck(new Date())
+      try {
+        const isHealthy = await checkApiHealth()
+        setStatus(isHealthy ? 'connected' : 'disconnected')
+        setLastCheck(new Date())
+      } catch (error) {
+        setStatus('disconnected')
+        setLastCheck(new Date())
+      }
     }
 
     // Check immediately

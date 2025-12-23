@@ -5,14 +5,17 @@
 
 // List of public CORS proxy services (fallback options)
 // Note: These are public proxies and may have rate limits
+// Using services that support POST requests
 const CORS_PROXIES = [
+  {
+    name: 'cors-anywhere',
+    format: (url) => `https://cors-anywhere.herokuapp.com/${url}`,
+    supportsPost: true,
+  },
   {
     name: 'allorigins',
     format: (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  },
-  {
-    name: 'corsproxy',
-    format: (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    supportsPost: false, // Only supports GET
   },
 ]
 
@@ -43,7 +46,19 @@ function rotateProxy() {
  * @returns {Promise<Response>} Fetch response
  */
 export async function fetchWithProxy(url, options = {}) {
-  const proxy = getCurrentProxy()
+  // Find a proxy that supports the request method
+  const method = options.method || 'GET'
+  const needsPost = method === 'POST' || method === 'PUT' || method === 'PATCH'
+  
+  // Filter proxies that support the method
+  const availableProxies = CORS_PROXIES.filter(p => !needsPost || p.supportsPost)
+  
+  if (availableProxies.length === 0) {
+    throw new Error('No CORS proxy available for POST requests. Please configure Vercel API routes.')
+  }
+  
+  // Use first available proxy
+  const proxy = availableProxies[0]
   const proxiedUrl = proxy.format(url)
   
   try {
@@ -55,8 +70,11 @@ export async function fetchWithProxy(url, options = {}) {
       },
     })
     
-    if (!response.ok && response.status >= 500) {
-      throw new Error(`Proxy returned ${response.status}`)
+    if (!response.ok) {
+      // Don't throw on 4xx errors from the target API, only on proxy errors
+      if (response.status >= 500) {
+        throw new Error(`Proxy returned ${response.status}`)
+      }
     }
     
     // Reset failure count on success
@@ -66,13 +84,13 @@ export async function fetchWithProxy(url, options = {}) {
     proxyFailures++
     console.warn(`CORS proxy ${proxy.name} failed (${proxyFailures}/${MAX_PROXY_FAILURES}):`, error.message)
     
-    // Try next proxy if we haven't exceeded max failures
-    if (proxyFailures < MAX_PROXY_FAILURES && CORS_PROXIES.length > 1) {
+    // Try next proxy if available
+    if (proxyFailures < MAX_PROXY_FAILURES && availableProxies.length > 1) {
       rotateProxy()
       return fetchWithProxy(url, options)
     }
     
-    throw new Error(`All CORS proxies failed. Please configure Vercel API routes. Original error: ${error.message}`)
+    throw new Error(`CORS proxy failed. Please configure Vercel API routes or enable CORS on the Canton participant. Original error: ${error.message}`)
   }
 }
 
