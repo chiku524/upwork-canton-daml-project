@@ -5,8 +5,8 @@ import { checkApiHealth } from '../utils/healthCheck'
  * Component to show connection status
  */
 export default function ConnectionStatus() {
-  const [status, setStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking')
-  const [lastCheck, setLastCheck] = useState<Date | null>(null)
+  const [status, setStatus] = useState('checking') // 'checking' | 'connected' | 'disconnected'
+  const [lastCheck, setLastCheck] = useState(null)
 
   useEffect(() => {
     const checkConnection = async () => {
