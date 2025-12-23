@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { useLedger } from './hooks/useLedger'
 import { useWallet } from './hooks/useWallet'
 import MarketsList from './components/MarketsList'
@@ -7,7 +7,19 @@ import MarketDetail from './components/MarketDetail'
 import CreateMarket from './components/CreateMarket'
 import WalletConnect from './components/WalletConnect'
 import Portfolio from './components/Portfolio'
+import { analytics } from './utils/analytics'
 import './App.css'
+
+// Component to track page views
+function PageViewTracker() {
+  const location = useLocation()
+  
+  useEffect(() => {
+    analytics.trackPageView(location.pathname)
+  }, [location])
+  
+  return null
+}
 
 function App() {
   const { ledger, isConnected } = useLedger()
@@ -15,6 +27,7 @@ function App() {
 
   return (
     <Router>
+      <PageViewTracker />
       <div className="app">
         <header className="app-header">
           <div className="container">

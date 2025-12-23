@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useLedger } from '../hooks/useLedger'
 import { useWallet } from '../hooks/useWallet'
+import { useWebSocket } from '../hooks/useWebSocket'
 
 export default function MarketsList() {
   const { ledger } = useLedger()
@@ -10,6 +11,13 @@ export default function MarketsList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // Use WebSocket for real-time updates (optional, falls back to polling)
+  const { data: wsMarkets, connected: wsConnected } = useWebSocket(
+    ['PredictionMarkets:Market'],
+    {},
+    ledger && wallet // Only enable if ledger and wallet are available
+  )
+
   useEffect(() => {
     const fetchMarkets = async () => {
       if (!ledger || !wallet) return
@@ -17,7 +25,8 @@ export default function MarketsList() {
       try {
         setLoading(true)
         // Query active markets from the ledger
-        const markets = await ledger.query(['PredictionMarkets:Market'], {})
+        // Force refresh to get latest data
+        const markets = await ledger.query(['PredictionMarkets:Market'], {}, { forceRefresh: true })
         setMarkets(markets)
       } catch (err) {
         setError(err.message)
@@ -28,7 +37,24 @@ export default function MarketsList() {
     }
 
     fetchMarkets()
-  }, [ledger, wallet])
+
+    // Poll for updates every 10 seconds if WebSocket is not connected
+    const pollInterval = setInterval(() => {
+      if (!wsConnected && ledger && wallet) {
+        fetchMarkets()
+      }
+    }, 10000)
+
+    return () => clearInterval(pollInterval)
+  }, [ledger, wallet, wsConnected])
+
+  // Update markets when WebSocket data arrives
+  useEffect(() => {
+    if (wsMarkets && wsMarkets.length > 0) {
+      setMarkets(wsMarkets)
+      setLoading(false)
+    }
+  }, [wsMarkets])
 
   const getStatusClass = (status) => {
     const statusMap = {

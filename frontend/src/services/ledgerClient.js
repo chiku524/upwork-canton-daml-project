@@ -1,10 +1,15 @@
 import axios from 'axios'
 import { formatError } from '../utils/errorHandler'
+import { retryWithBackoff } from '../utils/retry'
+import { cache, Cache } from '../utils/cache'
 
 const LEDGER_URL = import.meta.env.VITE_LEDGER_URL || 'https://participant.dev.canton.wolfedgelabs.com'
 
 // Use proxy API routes in production to avoid CORS issues
 const USE_PROXY = import.meta.env.PROD || window.location.hostname !== 'localhost'
+
+// Cache TTL for queries (5 seconds for real-time feel)
+const QUERY_CACHE_TTL = 5000
 
 /**
  * Simple client for Canton JSON API
@@ -30,19 +35,48 @@ class LedgerClient {
   }
 
   /**
-   * Query contracts
+   * Query contracts with caching and retry logic
    * @param {string[]} templateIds - Template IDs to query
    * @param {object} query - Query filters
+   * @param {object} options - Query options
+   * @param {boolean} options.useCache - Whether to use cache (default: true)
+   * @param {boolean} options.forceRefresh - Force refresh cache (default: false)
    * @returns {Promise<object[]>} Array of contract results
    */
-  async query(templateIds, query = {}) {
+  async query(templateIds, query = {}, options = {}) {
+    const { useCache = true, forceRefresh = false } = options
+    
+    // Generate cache key
+    const cacheKey = Cache.generateKey(templateIds, query)
+    
+    // Check cache first (unless force refresh)
+    if (useCache && !forceRefresh) {
+      const cached = cache.get(cacheKey)
+      if (cached !== null) {
+        return cached
+      }
+    }
+
     try {
-      const endpoint = this.useProxy ? '/api/query' : `${this.baseUrl}/v1/query`
-      const response = await this.client.post(endpoint, {
-        templateIds,
-        query,
+      // Retry with exponential backoff
+      const result = await retryWithBackoff(async () => {
+        const endpoint = this.useProxy ? '/api/query' : `${this.baseUrl}/v1/query`
+        const response = await this.client.post(endpoint, {
+          templateIds,
+          query,
+        })
+        return response.data.result || []
+      }, {
+        maxRetries: 3,
+        initialDelay: 1000,
       })
-      return response.data.result || []
+
+      // Cache the result
+      if (useCache) {
+        cache.set(cacheKey, result, QUERY_CACHE_TTL)
+      }
+
+      return result
     } catch (error) {
       console.error('Query error:', error)
       // Format error for better user experience
@@ -53,17 +87,29 @@ class LedgerClient {
   }
 
   /**
-   * Submit a command (create contract or exercise choice)
+   * Submit a command (create contract or exercise choice) with retry logic
    * @param {object} commands - Command object
    * @returns {Promise<object>} Command result
    */
   async submitCommand(commands) {
     try {
-      const endpoint = this.useProxy ? '/api/command' : `${this.baseUrl}/v1/command`
-      const response = await this.client.post(endpoint, {
-        commands,
+      // Retry with exponential backoff for commands
+      const result = await retryWithBackoff(async () => {
+        const endpoint = this.useProxy ? '/api/command' : `${this.baseUrl}/v1/command`
+        const response = await this.client.post(endpoint, {
+          commands,
+        })
+        return response.data
+      }, {
+        maxRetries: 2, // Fewer retries for commands (they're more critical)
+        initialDelay: 1000,
       })
-      return response.data
+
+      // Invalidate relevant caches after command
+      // This ensures fresh data after mutations
+      this.invalidateCache()
+
+      return result
     } catch (error) {
       console.error('Command error:', error)
       // Format error for better user experience
@@ -71,6 +117,13 @@ class LedgerClient {
       formattedError.originalError = error
       throw formattedError
     }
+  }
+
+  /**
+   * Invalidate cache (useful after mutations)
+   */
+  invalidateCache() {
+    cache.clear()
   }
 
   /**

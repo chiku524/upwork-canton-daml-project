@@ -51,10 +51,11 @@ export function formatError(error) {
 export function logError(error, context = 'Unknown') {
   console.error(`[${context}]`, error)
   
-  // In production, you might want to send to error tracking service
-  if (import.meta.env.PROD) {
-    // Example: Send to error tracking service
-    // errorTracker.captureException(error, { context })
+  // Track error with analytics
+  if (typeof window !== 'undefined') {
+    import('./analytics').then(({ analytics }) => {
+      analytics.trackError(error, { context })
+    })
   }
 }
 
