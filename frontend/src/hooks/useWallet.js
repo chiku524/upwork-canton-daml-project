@@ -20,12 +20,22 @@ export function useWallet() {
   const connectWallet = async () => {
     try {
       // In production, this would use WebAuthn/passkey for authentication
-      // For now, we'll use a simple prompt
-      const partyName = prompt('Enter your party name (or leave empty to generate):')
+      // For now, we'll use a simple prompt with better UX
+      const partyName = prompt(
+        'Enter your party name:\n\n' +
+        '• Leave empty to generate a new party\n' +
+        '• Enter an existing party name to connect\n\n' +
+        'Note: In production, this will use secure passkey authentication.'
+      )
+      
+      if (partyName === null) {
+        // User cancelled
+        return
+      }
       
       // In production, this would call the Canton party management API
       // to create or retrieve a party
-      const party = partyName || `User_${Date.now()}`
+      const party = partyName.trim() || `User_${Date.now()}`
       
       const newWallet = {
         party: party,
@@ -34,6 +44,9 @@ export function useWallet() {
       
       setWallet(newWallet)
       localStorage.setItem(WALLET_STORAGE_KEY, JSON.stringify(newWallet))
+      
+      // Show success message
+      console.log('Wallet connected:', party)
     } catch (error) {
       console.error('Failed to connect wallet', error)
       alert('Failed to connect wallet: ' + error.message)
