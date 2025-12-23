@@ -1,0 +1,21 @@
+{
+  "name": "canton-prediction-markets",
+  "version": "1.0.0",
+  "description": "Privacy-preserving prediction markets on Canton blockchain",
+  "scripts": {
+    "build": "daml build",
+    "test": "daml test",
+    "start": "npm run start:frontend",
+    "start:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build"
+  },
+  "keywords": [
+    "canton",
+    "daml",
+    "prediction-markets",
+    "blockchain"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+
