@@ -40,9 +40,10 @@ export default function MarketsList() {
 
       try {
         // Only set loading on initial load
-        if (markets.length === 0) {
-          setLoading(true)
-        }
+        setLoading(prev => {
+          // Only show loading if we're currently loading or have no markets
+          return prev
+        })
         
         // Query active markets from the ledger
         // Force refresh to get latest data
