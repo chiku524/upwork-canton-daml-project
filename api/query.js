@@ -40,6 +40,7 @@ export default async function handler(req, res) {
   const LEDGER_URL = process.env.VITE_LEDGER_URL || 'https://participant.dev.canton.wolfedgelabs.com'
 
   try {
+    console.log('[api/query] Fetching from ledger:', LEDGER_URL)
     const response = await fetch(`${LEDGER_URL}/v1/query`, {
       method: 'POST',
       headers: {
@@ -49,15 +50,20 @@ export default async function handler(req, res) {
       body: JSON.stringify(req.body),
     })
 
+    console.log('[api/query] Ledger response status:', response.status)
     const data = await response.json()
+    console.log('[api/query] Ledger response data:', JSON.stringify(data).substring(0, 200))
     
     if (!response.ok) {
+      console.log('[api/query] Ledger returned error, forwarding status:', response.status)
       return res.status(response.status).json(data)
     }
 
+    console.log('[api/query] Sending successful response')
     return res.status(200).json(data)
   } catch (error) {
     console.error('[api/query] Query proxy error:', error)
+    console.error('[api/query] Error stack:', error.stack)
     return res.status(500).json({ 
       error: 'Failed to query ledger',
       message: error.message 

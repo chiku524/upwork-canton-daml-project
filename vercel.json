@@ -3,5 +3,11 @@
   "outputDirectory": "frontend/dist",
   "installCommand": "cd frontend && npm install",
   "devCommand": "cd frontend && npm run dev",
-  "framework": "vite"
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/((?!api|_next|assets|favicon.ico|.*\\.(js|css|png|jpg|jpeg|svg|woff|woff2|ttf|eot)).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
