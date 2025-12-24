@@ -1,9 +1,8 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useLedger } from '../hooks/useLedger'
 import { useWallet } from '../hooks/useWallet'
 import { useWebSocket } from '../hooks/useWebSocket'
-import { debounce } from '../utils/performance'
 
 export default function MarketsList() {
   const { ledger } = useLedger()
@@ -11,6 +10,9 @@ export default function MarketsList() {
   const [markets, setMarkets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const pollIntervalRef = useRef(null)
+  const apiRoutesWorkingRef = useRef(true)
+  const isMountedRef = useRef(true)
 
   // WebSocket disabled by default (falls back to polling)
   // Enable in useWebSocket.js if WebSocket support is needed
@@ -21,41 +23,105 @@ export default function MarketsList() {
   )
 
   useEffect(() => {
+    isMountedRef.current = true
+    
     const fetchMarkets = async () => {
-      if (!ledger || !wallet) return
+      if (!ledger || !wallet || !isMountedRef.current) return
+
+      // Stop polling if API routes are not working
+      if (!apiRoutesWorkingRef.current) {
+        return
+      }
+
+      // Check if tab is visible before making request
+      if (document.hidden) {
+        return
+      }
 
       try {
-        setLoading(true)
+        // Only set loading on initial load
+        if (markets.length === 0) {
+          setLoading(true)
+        }
+        
         // Query active markets from the ledger
         // Force refresh to get latest data
-        const markets = await ledger.query(['PredictionMarkets:Market'], {}, { forceRefresh: true })
-        setMarkets(markets)
+        const fetchedMarkets = await ledger.query(['PredictionMarkets:Market'], {}, { forceRefresh: true })
+        
+        if (!isMountedRef.current) return
+        
+        setMarkets(fetchedMarkets)
+        setError(null)
+        apiRoutesWorkingRef.current = true // Mark API as working
       } catch (err) {
+        if (!isMountedRef.current) return
+        
         // Don't set error if it's just empty results - show empty state instead
         if (err.message?.includes('Resource not found') || err.message?.includes('404')) {
-          // API route not found - this is expected if Vercel routes aren't configured
+          // API route not found - stop polling to prevent excessive requests
+          apiRoutesWorkingRef.current = false
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current)
+            pollIntervalRef.current = null
+          }
           setMarkets([]) // Show empty markets list
           setError(null) // Don't show error, just empty state
         } else {
           setError(err.message)
         }
-        console.error('Error fetching markets:', err)
       } finally {
-        setLoading(false)
+        if (isMountedRef.current) {
+          setLoading(false)
+        }
       }
     }
 
+    // Initial fetch
     fetchMarkets()
 
-    // Poll for updates every 15 seconds (reduced frequency to save resources)
-    const pollInterval = setInterval(() => {
-      if (ledger && wallet) {
-        fetchMarkets()
-      }
-    }, 15000)
+    // Only poll if API routes are working and tab is visible
+    // Poll for updates every 30 seconds (increased to reduce load)
+    if (apiRoutesWorkingRef.current) {
+      pollIntervalRef.current = setInterval(() => {
+        // Only poll if tab is visible
+        if (!document.hidden && ledger && wallet && apiRoutesWorkingRef.current) {
+          fetchMarkets()
+        }
+      }, 30000) // Increased to 30 seconds
+    }
 
-    return () => clearInterval(pollInterval)
-  }, [ledger, wallet])
+    // Handle visibility change - pause/resume polling
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab is hidden, pause polling
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current)
+          pollIntervalRef.current = null
+        }
+      } else {
+        // Tab is visible, resume polling if API routes are working
+        if (apiRoutesWorkingRef.current && ledger && wallet && !pollIntervalRef.current) {
+          fetchMarkets() // Fetch immediately when tab becomes visible
+          pollIntervalRef.current = setInterval(() => {
+            if (!document.hidden && ledger && wallet && apiRoutesWorkingRef.current) {
+              fetchMarkets()
+            }
+          }, 30000)
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      isMountedRef.current = false
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [ledger, wallet]) // Only depend on ledger and wallet
 
   // Update markets when WebSocket data arrives
   useEffect(() => {

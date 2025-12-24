@@ -17,12 +17,23 @@ import ApiStatusBanner from './components/ApiStatusBanner'
 import './App.css'
 
 // Component to track page views
+// Memoized to prevent unnecessary re-renders
 function PageViewTracker() {
   const location = useLocation()
+  const lastPathRef = useRef('')
   
   useEffect(() => {
-    analytics.trackPageView(location.pathname)
-  }, [location])
+    // Only track if pathname actually changed
+    if (location.pathname !== lastPathRef.current) {
+      lastPathRef.current = location.pathname
+      // Debounce analytics to prevent rapid-fire events
+      const timeoutId = setTimeout(() => {
+        analytics.trackPageView(location.pathname)
+      }, 100)
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [location.pathname]) // Only depend on pathname, not entire location object
   
   return null
 }

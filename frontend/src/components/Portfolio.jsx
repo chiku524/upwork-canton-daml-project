@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useLedger } from '../hooks/useLedger'
 import { useWallet } from '../hooks/useWallet'
@@ -9,17 +9,26 @@ export default function Portfolio() {
   const [positions, setPositions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const isMountedRef = useRef(true)
 
   useEffect(() => {
+    isMountedRef.current = true
+    
     const fetchPositions = async () => {
-      if (!ledger || !wallet) return
+      if (!ledger || !wallet || !isMountedRef.current) return
 
       try {
         setLoading(true)
         // Query user's positions
-        const positions = await ledger.query(['PredictionMarkets:Position'], { owner: wallet.party })
-        setPositions(positions)
+        const fetchedPositions = await ledger.query(['PredictionMarkets:Position'], { owner: wallet.party })
+        
+        if (!isMountedRef.current) return
+        
+        setPositions(fetchedPositions)
+        setError(null)
       } catch (err) {
+        if (!isMountedRef.current) return
+        
         // Don't set error if it's just empty results
         if (err.message?.includes('Resource not found') || err.message?.includes('404')) {
           setPositions([]) // Show empty portfolio
@@ -28,11 +37,17 @@ export default function Portfolio() {
           setError(err.message)
         }
       } finally {
-        setLoading(false)
+        if (isMountedRef.current) {
+          setLoading(false)
+        }
       }
     }
 
     fetchPositions()
+
+    return () => {
+      isMountedRef.current = false
+    }
   }, [ledger, wallet])
 
   if (loading) {
