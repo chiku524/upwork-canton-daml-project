@@ -1,0 +1,7 @@
+# Vercel redirects file
+# API routes should be handled by serverless functions, not redirected
+/api/* 200
+
+# SPA routing - redirect all non-API routes to index.html
+/*    /index.html   200
+
