@@ -1,7 +1,7 @@
 // Vercel serverless function to proxy Canton JSON API queries
 // Located at project root /api/ directory (Vercel requirement)
 export default async function handler(req, res) {
-  // Log for debugging - this should appear in Vercel function logs if request reaches here
+  // CRITICAL: Log immediately to verify function is being called
   console.log('[api/query] ===== FUNCTION INVOKED =====')
   console.log('[api/query] Request received:', {
     method: req.method,
@@ -15,8 +15,8 @@ export default async function handler(req, res) {
     nodeVersion: process.version,
     timestamp: new Date().toISOString(),
   })
-
-  // Enable CORS
+  
+  // IMPORTANT: Set CORS headers FIRST before any other operations
   res.setHeader('Access-Control-Allow-Credentials', true)
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT')
