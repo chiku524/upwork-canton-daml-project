@@ -44,14 +44,43 @@ export default function AnimatedBackground() {
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
 
-    // Neon color palette
-    const colors = [
-      { r: 0, g: 255, b: 255 },      // Cyan
-      { r: 255, g: 0, b: 255 },      // Magenta
-      { r: 138, g: 43, b: 226 },     // BlueViolet
-      { r: 0, g: 255, b: 127 },      // SpringGreen
-      { r: 255, g: 20, b: 147 },     // DeepPink
-    ]
+    // Cohesive color palette system - multiple palettes for different elements
+    const colorPalettes = {
+      // Primary palette - vibrant neon for particles and connections
+      primary: [
+        { r: 0, g: 255, b: 255 },      // Cyan
+        { r: 100, g: 200, b: 255 },    // Light Blue
+        { r: 138, g: 43, b: 226 },     // BlueViolet
+        { r: 0, g: 255, b: 127 },      // SpringGreen
+      ],
+      // Secondary palette - softer tones for graph lines
+      secondary: [
+        { r: 100, g: 150, b: 255 },    // Soft Blue
+        { r: 150, g: 100, b: 255 },    // Soft Purple
+        { r: 0, g: 200, b: 200 },      // Teal
+        { r: 100, g: 255, b: 200 },    // Mint
+      ],
+      // Accent palette - warm tones for orbs and rings
+      accent: [
+        { r: 255, g: 100, b: 200 },    // Pink
+        { r: 255, g: 150, b: 100 },    // Coral
+        { r: 200, g: 100, b: 255 },    // Lavender
+        { r: 100, g: 200, b: 255 },    // Sky Blue
+      ],
+      // Subtle palette - very muted for background elements
+      subtle: [
+        { r: 80, g: 180, b: 220 },     // Muted Cyan
+        { r: 180, g: 100, b: 220 },    // Muted Purple
+        { r: 100, g: 220, b: 180 },    // Muted Green
+        { r: 220, g: 120, b: 180 },    // Muted Pink
+      ]
+    }
+    
+    // Helper to get random color from a palette
+    const getColor = (palette = 'primary') => {
+      const colors = colorPalettes[palette]
+      return colors[Math.floor(Math.random() * colors.length)]
+    }
 
     // Particle class for floating data points with varied opacity
     class Particle {
@@ -76,7 +105,7 @@ export default function AnimatedBackground() {
         this.size = Math.random() * 3 + 0.5
         this.speedX = (Math.random() - 0.5) * 0.8
         this.speedY = (Math.random() - 0.5) * 0.8
-        this.color = colors[Math.floor(Math.random() * colors.length)]
+        this.color = getColor('primary')
         
         // Varied opacity levels - some very subtle, some more visible
         const opacityType = Math.random()
@@ -163,7 +192,7 @@ export default function AnimatedBackground() {
         
         this.amplitude = 20 + Math.random() * 80 // Smaller amplitude
         this.frequency = 0.003 + Math.random() * 0.015 // Lower frequency for smoother waves
-        this.color = colors[Math.floor(Math.random() * colors.length)]
+        this.color = getColor('primary')
         
         // Much more subtle opacity - make them less distracting
         this.opacity = Math.random() * 0.12 + 0.05 // 5-17% - very subtle
@@ -298,7 +327,7 @@ export default function AnimatedBackground() {
         this.rotationSpeed = (Math.random() - 0.5) * 0.02
         this.speedX = (Math.random() - 0.5) * 0.3
         this.speedY = (Math.random() - 0.5) * 0.3
-        this.color = colors[Math.floor(Math.random() * colors.length)]
+        this.color = getColor('primary')
         this.shapeType = Math.floor(Math.random() * 3) // 0: triangle, 1: hexagon, 2: diamond
         
         // Varied opacity
@@ -396,7 +425,7 @@ export default function AnimatedBackground() {
         this.size = Math.random() * 80 + 40
         this.speedX = (Math.random() - 0.5) * 0.15
         this.speedY = (Math.random() - 0.5) * 0.15
-        this.color = colors[Math.floor(Math.random() * colors.length)]
+        this.color = getColor('primary')
         this.opacity = Math.random() * 0.15 + 0.05 // Very subtle
         this.pulseSpeed = Math.random() * 0.01 + 0.005
         this.pulsePhase = Math.random() * Math.PI * 2
@@ -454,7 +483,7 @@ export default function AnimatedBackground() {
         this.minRadius = this.maxRadius * 0.2
         this.currentRadius = this.minRadius
         this.speed = Math.random() * 0.8 + 0.3
-        this.color = colors[Math.floor(Math.random() * colors.length)]
+        this.color = getColor('primary')
         this.opacity = Math.random() * 0.3 + 0.2 // More visible
         this.expanding = true
         this.life = 0
@@ -481,14 +510,14 @@ export default function AnimatedBackground() {
           }
         }
 
-        // Fade out more gradually, then fade in
+        // Very gradual fade in/out for subtlety
         const lifeProgress = this.life / this.maxLife
-        if (lifeProgress < 0.3) {
-          this.currentOpacity = this.opacity * (lifeProgress / 0.3) // Fade in
-        } else if (lifeProgress > 0.7) {
-          this.currentOpacity = this.opacity * (1 - (lifeProgress - 0.7) / 0.3) // Fade out
+        if (lifeProgress < 0.4) {
+          this.currentOpacity = this.opacity * (lifeProgress / 0.4) // Slow fade in
+        } else if (lifeProgress > 0.6) {
+          this.currentOpacity = this.opacity * (1 - (lifeProgress - 0.6) / 0.4) // Slow fade out
         } else {
-          this.currentOpacity = this.opacity // Full opacity in middle
+          this.currentOpacity = this.opacity // Full opacity in middle (only 20% of life)
         }
       }
 
@@ -532,8 +561,8 @@ export default function AnimatedBackground() {
       glowingOrbs.push(new GlowingOrb())
     }
     
-    // Initialize pulsing rings - more visible
-    const numRings = 5 + Math.floor(Math.random() * 4) // 5-8 rings for better visibility
+    // Initialize pulsing rings - fewer, slower, more subtle
+    const numRings = 3 + Math.floor(Math.random() * 3) // 3-5 rings (reduced from 5-8)
     console.log('[AnimatedBackground] Initializing', numRings, 'pulsing rings')
     for (let i = 0; i < numRings; i++) {
       pulsingRings.push(new PulsingRing())
