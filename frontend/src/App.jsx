@@ -14,6 +14,7 @@ const Portfolio = lazy(() => import('./components/Portfolio'))
 import { analytics } from './utils/analytics'
 import ConnectionStatus from './components/ConnectionStatus'
 import ApiStatusBanner from './components/ApiStatusBanner'
+import AnimatedBackground from './components/AnimatedBackground'
 import './App.css'
 
 // Component to track page views
@@ -42,11 +43,12 @@ function App() {
   const { ledger, isConnected } = useLedger()
   const { wallet, connectWallet, disconnectWallet } = useWallet()
 
-  return (
-    <Router>
-      <PageViewTracker />
-      <ApiStatusBanner />
-      <div className="app">
+      return (
+        <Router>
+          <PageViewTracker />
+          <AnimatedBackground />
+          <ApiStatusBanner />
+          <div className="app">
         <header className="app-header">
           <div className="container">
             <Link to="/" className="logo">
