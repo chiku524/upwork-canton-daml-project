@@ -29,6 +29,9 @@ export default function AnimatedBackground() {
     console.log('[AnimatedBackground] Starting animation')
     let particles = []
     let graphLines = []
+    let geometricShapes = []
+    let glowingOrbs = []
+    let pulsingRings = []
     let time = 0
 
     // Set canvas size - use getBoundingClientRect to match CSS sizing
@@ -50,22 +53,44 @@ export default function AnimatedBackground() {
       { r: 255, g: 20, b: 147 },     // DeepPink
     ]
 
-    // Particle class for floating data points
+    // Particle class for floating data points with varied opacity
     class Particle {
       constructor() {
         this.reset()
       }
 
       reset() {
-        this.x = Math.random() * canvas.width
-        this.y = Math.random() * canvas.height
-        this.size = Math.random() * 2 + 1
-        this.speedX = (Math.random() - 0.5) * 0.5
-        this.speedY = (Math.random() - 0.5) * 0.5
+        // More dynamic initial positions - cluster some, spread others
+        const cluster = Math.random() < 0.3 // 30% chance to cluster
+        if (cluster) {
+          const clusterX = Math.random() * canvas.width
+          const clusterY = Math.random() * canvas.height
+          const spread = 100
+          this.x = clusterX + (Math.random() - 0.5) * spread
+          this.y = clusterY + (Math.random() - 0.5) * spread
+        } else {
+          this.x = Math.random() * canvas.width
+          this.y = Math.random() * canvas.height
+        }
+        
+        this.size = Math.random() * 3 + 0.5
+        this.speedX = (Math.random() - 0.5) * 0.8
+        this.speedY = (Math.random() - 0.5) * 0.8
         this.color = colors[Math.floor(Math.random() * colors.length)]
-        this.opacity = Math.random() * 0.4 + 0.2
-        this.pulseSpeed = Math.random() * 0.02 + 0.01
+        
+        // Varied opacity levels - some very subtle, some more visible
+        const opacityType = Math.random()
+        if (opacityType < 0.3) {
+          this.opacity = Math.random() * 0.15 + 0.05 // Very subtle (5-20%)
+        } else if (opacityType < 0.7) {
+          this.opacity = Math.random() * 0.25 + 0.15 // Medium (15-40%)
+        } else {
+          this.opacity = Math.random() * 0.3 + 0.4 // More visible (40-70%)
+        }
+        
+        this.pulseSpeed = Math.random() * 0.03 + 0.01
         this.pulsePhase = Math.random() * Math.PI * 2
+        this.pulseAmplitude = Math.random() * 0.2 + 0.1
       }
 
       update() {
@@ -79,8 +104,8 @@ export default function AnimatedBackground() {
         if (this.y < 0) this.y = canvas.height
         if (this.y > canvas.height) this.y = 0
 
-        // Pulsing opacity
-        this.currentOpacity = this.opacity + Math.sin(this.pulsePhase) * 0.1
+        // Pulsing opacity with varied amplitude
+        this.currentOpacity = this.opacity + Math.sin(this.pulsePhase) * this.pulseAmplitude
       }
 
       draw() {
@@ -106,13 +131,38 @@ export default function AnimatedBackground() {
       reset() {
         this.points = []
         this.numPoints = 20 + Math.floor(Math.random() * 30)
-        this.startX = Math.random() * canvas.width
-        this.startY = Math.random() * canvas.height
-        this.amplitude = 50 + Math.random() * 100
-        this.frequency = 0.01 + Math.random() * 0.02
+        
+        // More dynamic positioning - some start off-screen, some in center
+        const positionType = Math.random()
+        if (positionType < 0.3) {
+          // Start from edges
+          this.startX = Math.random() < 0.5 ? -50 : canvas.width + 50
+          this.startY = Math.random() * canvas.height
+        } else if (positionType < 0.6) {
+          // Start from center area
+          this.startX = canvas.width / 2 + (Math.random() - 0.5) * 200
+          this.startY = canvas.height / 2 + (Math.random() - 0.5) * 200
+        } else {
+          // Random position
+          this.startX = Math.random() * canvas.width
+          this.startY = Math.random() * canvas.height
+        }
+        
+        this.amplitude = 30 + Math.random() * 120
+        this.frequency = 0.005 + Math.random() * 0.025
         this.color = colors[Math.floor(Math.random() * colors.length)]
-        this.opacity = Math.random() * 0.3 + 0.2
-        this.speed = 0.2 + Math.random() * 0.3
+        
+        // Varied opacity for graph lines
+        const opacityType = Math.random()
+        if (opacityType < 0.4) {
+          this.opacity = Math.random() * 0.15 + 0.08 // Subtle (8-23%)
+        } else if (opacityType < 0.8) {
+          this.opacity = Math.random() * 0.2 + 0.2 // Medium (20-40%)
+        } else {
+          this.opacity = Math.random() * 0.15 + 0.35 // More visible (35-50%)
+        }
+        
+        this.speed = 0.1 + Math.random() * 0.5
         this.offset = Math.random() * Math.PI * 2
 
         // Generate points for smooth curve
@@ -191,16 +241,35 @@ export default function AnimatedBackground() {
       ctx.fillStyle = 'rgba(18, 18, 18, 0.3)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      // Update and draw graph lines
+      // Update and draw all elements in layers
+      // Background layer: glowing orbs
+      glowingOrbs.forEach(orb => {
+        orb.update()
+        orb.draw()
+      })
+
+      // Mid layer: graph lines
       graphLines.forEach(line => {
         line.update()
         line.draw()
       })
 
-      // Update and draw particles
+      // Foreground layer: geometric shapes
+      geometricShapes.forEach(shape => {
+        shape.update()
+        shape.draw()
+      })
+
+      // Foreground layer: particles
       particles.forEach(particle => {
         particle.update()
         particle.draw()
+      })
+
+      // Top layer: pulsing rings
+      pulsingRings.forEach(ring => {
+        ring.update()
+        ring.draw()
       })
 
       // Draw connections between nearby particles (network effect)
@@ -211,12 +280,14 @@ export default function AnimatedBackground() {
           const distance = Math.sqrt(dx * dx + dy * dy)
 
           if (distance < 150) {
-            const opacity = (1 - distance / 150) * 0.15
+            // Varied connection opacity based on distance
+            const baseOpacity = (1 - distance / 150)
+            const opacity = baseOpacity * (0.1 + Math.random() * 0.1) // 10-20% range
             ctx.beginPath()
             ctx.moveTo(particle.x, particle.y)
             ctx.lineTo(otherParticle.x, otherParticle.y)
             ctx.strokeStyle = `rgba(100, 200, 255, ${opacity})`
-            ctx.lineWidth = 0.5
+            ctx.lineWidth = 0.5 + Math.random() * 0.5
             ctx.stroke()
           }
         })
