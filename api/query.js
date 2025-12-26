@@ -41,9 +41,18 @@ export default async function handler(req, res) {
 
   try {
     // Ensure we're using HTTPS and the correct endpoint
-    const queryUrl = `${LEDGER_URL}/v1/query`
+    // Remove trailing slash from LEDGER_URL if present
+    const baseUrl = LEDGER_URL.replace(/\/$/, '')
+    const queryUrl = `${baseUrl}/v1/query`
     console.log('[api/query] Fetching from ledger:', queryUrl)
     console.log('[api/query] Request body:', JSON.stringify(req.body))
+    
+    // Ensure request body matches Canton JSON API format
+    const requestBody = {
+      templateIds: req.body.templateIds || [],
+      query: req.body.query || {},
+    }
+    console.log('[api/query] Formatted request body:', JSON.stringify(requestBody))
     
     const response = await fetch(queryUrl, {
       method: 'POST',
@@ -52,12 +61,27 @@ export default async function handler(req, res) {
         'Accept': 'application/json',
         ...(req.headers.authorization && { Authorization: req.headers.authorization }),
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(requestBody),
       redirect: 'follow', // Follow redirects if any
     })
+    
+    console.log('[api/query] Response URL:', response.url) // Log final URL after redirects
+    console.log('[api/query] Response status:', response.status)
+    console.log('[api/query] Response headers:', Object.fromEntries(response.headers.entries()))
 
-    console.log('[api/query] Ledger response status:', response.status)
-    const data = await response.json()
+    // Check if response is JSON before parsing
+    const contentType = response.headers.get('content-type')
+    console.log('[api/query] Response content-type:', contentType)
+    
+    let data
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json()
+    } else {
+      const text = await response.text()
+      console.log('[api/query] Non-JSON response:', text.substring(0, 500))
+      data = { error: 'Non-JSON response', text: text.substring(0, 500) }
+    }
+    
     console.log('[api/query] Ledger response data:', JSON.stringify(data).substring(0, 200))
     
     if (!response.ok) {
