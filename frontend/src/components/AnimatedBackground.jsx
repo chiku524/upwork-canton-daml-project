@@ -63,7 +63,7 @@ export default function AnimatedBackground() {
         this.speedX = (Math.random() - 0.5) * 0.5
         this.speedY = (Math.random() - 0.5) * 0.5
         this.color = colors[Math.floor(Math.random() * colors.length)]
-        this.opacity = Math.random() * 0.3 + 0.15
+        this.opacity = Math.random() * 0.4 + 0.2
         this.pulseSpeed = Math.random() * 0.02 + 0.01
         this.pulsePhase = Math.random() * Math.PI * 2
       }
@@ -111,7 +111,7 @@ export default function AnimatedBackground() {
         this.amplitude = 50 + Math.random() * 100
         this.frequency = 0.01 + Math.random() * 0.02
         this.color = colors[Math.floor(Math.random() * colors.length)]
-        this.opacity = Math.random() * 0.25 + 0.15
+        this.opacity = Math.random() * 0.3 + 0.2
         this.speed = 0.2 + Math.random() * 0.3
         this.offset = Math.random() * Math.PI * 2
 
@@ -188,7 +188,7 @@ export default function AnimatedBackground() {
 
       // Clear canvas with slight fade for trail effect
       // Use a darker base to ensure particles stand out
-      ctx.fillStyle = 'rgba(18, 18, 18, 0.2)'
+      ctx.fillStyle = 'rgba(18, 18, 18, 0.3)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       // Update and draw graph lines
@@ -224,6 +224,18 @@ export default function AnimatedBackground() {
 
       animationFrameRef.current = requestAnimationFrame(animate)
     }
+
+    // Test: Draw a visible test pattern first to verify canvas is working
+    ctx.fillStyle = 'rgba(0, 255, 255, 0.5)'
+    ctx.fillRect(10, 10, 50, 50)
+    console.log('[AnimatedBackground] Test pattern drawn - if you see a cyan square, canvas is working')
+    
+    // Clear test pattern after a moment
+    setTimeout(() => {
+      ctx.fillStyle = 'rgba(18, 18, 18, 1)'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      console.log('[AnimatedBackground] Test pattern cleared, starting animation')
+    }, 1000)
 
     animate()
 

@@ -27,11 +27,14 @@ body {
   min-height: 100vh;
   background-color: #121212;
   overflow-x: hidden;
+  position: relative;
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
+  position: relative;
+  background: transparent;
 }
 
 a {
