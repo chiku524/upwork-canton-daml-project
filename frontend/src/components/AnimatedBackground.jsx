@@ -55,8 +55,9 @@ export default function AnimatedBackground() {
       }
 
       reset() {
-        this.x = Math.random() * canvas.width
-        this.y = Math.random() * canvas.height
+        const rect = canvas.getBoundingClientRect()
+        this.x = Math.random() * rect.width
+        this.y = Math.random() * rect.height
         this.size = Math.random() * 2 + 1
         this.speedX = (Math.random() - 0.5) * 0.5
         this.speedY = (Math.random() - 0.5) * 0.5
@@ -72,10 +73,11 @@ export default function AnimatedBackground() {
         this.pulsePhase += this.pulseSpeed
 
         // Wrap around edges
-        if (this.x < 0) this.x = canvas.width
-        if (this.x > canvas.width) this.x = 0
-        if (this.y < 0) this.y = canvas.height
-        if (this.y > canvas.height) this.y = 0
+        const rect = canvas.getBoundingClientRect()
+        if (this.x < 0) this.x = rect.width
+        if (this.x > rect.width) this.x = 0
+        if (this.y < 0) this.y = rect.height
+        if (this.y > rect.height) this.y = 0
 
         // Pulsing opacity
         this.currentOpacity = this.opacity + Math.sin(this.pulsePhase) * 0.1
@@ -102,10 +104,11 @@ export default function AnimatedBackground() {
       }
 
       reset() {
+        const rect = canvas.getBoundingClientRect()
         this.points = []
         this.numPoints = 20 + Math.floor(Math.random() * 30)
-        this.startX = Math.random() * canvas.width
-        this.startY = Math.random() * canvas.height
+        this.startX = Math.random() * rect.width
+        this.startY = Math.random() * rect.height
         this.amplitude = 50 + Math.random() * 100
         this.frequency = 0.01 + Math.random() * 0.02
         this.color = colors[Math.floor(Math.random() * colors.length)]
@@ -114,9 +117,10 @@ export default function AnimatedBackground() {
         this.offset = Math.random() * Math.PI * 2
 
         // Generate points for smooth curve
+        const rect = canvas.getBoundingClientRect()
         for (let i = 0; i < this.numPoints; i++) {
           this.points.push({
-            x: this.startX + i * (canvas.width / this.numPoints),
+            x: this.startX + i * (rect.width / this.numPoints),
             y: this.startY
           })
         }
@@ -131,7 +135,8 @@ export default function AnimatedBackground() {
           point.x += this.speed
 
           // Wrap around
-          if (point.x > canvas.width) {
+          const rect = canvas.getBoundingClientRect()
+          if (point.x > rect.width) {
             point.x = 0
             this.startX = 0
           }
@@ -166,7 +171,10 @@ export default function AnimatedBackground() {
     }
 
     // Initialize particles - ensure minimum visibility
-    const numParticles = Math.max(30, Math.floor((canvas.width * canvas.height) / 15000))
+    // Use canvas dimensions from getBoundingClientRect for accurate sizing
+    const rect = canvas.getBoundingClientRect()
+    const numParticles = Math.max(50, Math.floor((rect.width * rect.height) / 10000))
+    console.log('[AnimatedBackground] Canvas size:', rect.width, 'x', rect.height)
     console.log('[AnimatedBackground] Initializing', numParticles, 'particles')
     for (let i = 0; i < numParticles; i++) {
       particles.push(new Particle())
@@ -185,8 +193,9 @@ export default function AnimatedBackground() {
 
       // Clear canvas with slight fade for trail effect
       // Use a darker base to ensure particles stand out
+      const rect = canvas.getBoundingClientRect()
       ctx.fillStyle = 'rgba(18, 18, 18, 0.2)'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.fillRect(0, 0, rect.width, rect.height)
 
       // Update and draw graph lines
       graphLines.forEach(line => {
