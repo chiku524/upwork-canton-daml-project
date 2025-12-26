@@ -15,9 +15,18 @@ export default function AnimatedBackground() {
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas) {
+      console.error('[AnimatedBackground] Canvas ref is null')
+      return
+    }
 
     const ctx = canvas.getContext('2d')
+    if (!ctx) {
+      console.error('[AnimatedBackground] Could not get 2d context')
+      return
+    }
+    
+    console.log('[AnimatedBackground] Starting animation')
     let particles = []
     let graphLines = []
     let time = 0
@@ -54,7 +63,7 @@ export default function AnimatedBackground() {
         this.speedX = (Math.random() - 0.5) * 0.5
         this.speedY = (Math.random() - 0.5) * 0.5
         this.color = colors[Math.floor(Math.random() * colors.length)]
-        this.opacity = Math.random() * 0.2 + 0.05
+        this.opacity = Math.random() * 0.3 + 0.15
         this.pulseSpeed = Math.random() * 0.02 + 0.01
         this.pulsePhase = Math.random() * Math.PI * 2
       }
@@ -102,7 +111,7 @@ export default function AnimatedBackground() {
         this.amplitude = 50 + Math.random() * 100
         this.frequency = 0.01 + Math.random() * 0.02
         this.color = colors[Math.floor(Math.random() * colors.length)]
-        this.opacity = Math.random() * 0.15 + 0.05
+        this.opacity = Math.random() * 0.25 + 0.15
         this.speed = 0.2 + Math.random() * 0.3
         this.offset = Math.random() * Math.PI * 2
 
@@ -158,14 +167,16 @@ export default function AnimatedBackground() {
       }
     }
 
-    // Initialize particles
-    const numParticles = Math.floor((canvas.width * canvas.height) / 15000)
+    // Initialize particles - ensure minimum visibility
+    const numParticles = Math.max(30, Math.floor((canvas.width * canvas.height) / 15000))
+    console.log('[AnimatedBackground] Initializing', numParticles, 'particles')
     for (let i = 0; i < numParticles; i++) {
       particles.push(new Particle())
     }
 
     // Initialize graph lines
     const numGraphLines = 3 + Math.floor(Math.random() * 3)
+    console.log('[AnimatedBackground] Initializing', numGraphLines, 'graph lines')
     for (let i = 0; i < numGraphLines; i++) {
       graphLines.push(new GraphLine())
     }
@@ -175,7 +186,7 @@ export default function AnimatedBackground() {
       time += 0.01
 
       // Clear canvas with slight fade for trail effect
-      ctx.fillStyle = 'rgba(18, 18, 18, 0.1)'
+      ctx.fillStyle = 'rgba(18, 18, 18, 0.15)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       // Update and draw graph lines
@@ -198,7 +209,7 @@ export default function AnimatedBackground() {
           const distance = Math.sqrt(dx * dx + dy * dy)
 
           if (distance < 150) {
-            const opacity = (1 - distance / 150) * 0.1
+            const opacity = (1 - distance / 150) * 0.15
             ctx.beginPath()
             ctx.moveTo(particle.x, particle.y)
             ctx.lineTo(otherParticle.x, otherParticle.y)
