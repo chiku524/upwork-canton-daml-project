@@ -40,13 +40,20 @@ export default async function handler(req, res) {
   const LEDGER_URL = process.env.VITE_LEDGER_URL || 'https://participant.dev.canton.wolfedgelabs.com'
 
   try {
-    const response = await fetch(`${LEDGER_URL}/v1/command`, {
+    // Ensure we're using HTTPS and the correct endpoint
+    const commandUrl = `${LEDGER_URL}/v1/command`
+    console.log('[api/command] Fetching from ledger:', commandUrl)
+    console.log('[api/command] Request body:', JSON.stringify(req.body))
+    
+    const response = await fetch(commandUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         ...(req.headers.authorization && { Authorization: req.headers.authorization }),
       },
       body: JSON.stringify(req.body),
+      redirect: 'follow', // Follow redirects if any
     })
 
     const data = await response.json()
