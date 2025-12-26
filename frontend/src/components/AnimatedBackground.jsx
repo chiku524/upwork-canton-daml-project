@@ -174,7 +174,6 @@ export default function AnimatedBackground() {
         this.life = 0
         this.maxLife = Math.random() * 300 + 200 // Lines fade in/out
         this.fadeIn = true
-      }
 
         // Generate points for smooth curve
         for (let i = 0; i < this.numPoints; i++) {
@@ -264,11 +263,280 @@ export default function AnimatedBackground() {
       particles.push(new Particle())
     }
 
+    // Geometric Shape class - triangles, hexagons, etc.
+    class GeometricShape {
+      constructor() {
+        this.reset()
+      }
+
+      reset() {
+        // Dynamic positioning - prefer edges and corners
+        const positionType = Math.random()
+        if (positionType < 0.4) {
+          // Near edges
+          const edge = Math.floor(Math.random() * 4)
+          if (edge === 0) { // Top
+            this.x = Math.random() * canvas.width
+            this.y = Math.random() * 100
+          } else if (edge === 1) { // Right
+            this.x = canvas.width - Math.random() * 100
+            this.y = Math.random() * canvas.height
+          } else if (edge === 2) { // Bottom
+            this.x = Math.random() * canvas.width
+            this.y = canvas.height - Math.random() * 100
+          } else { // Left
+            this.x = Math.random() * 100
+            this.y = Math.random() * canvas.height
+          }
+        } else {
+          this.x = Math.random() * canvas.width
+          this.y = Math.random() * canvas.height
+        }
+
+        this.size = Math.random() * 15 + 5
+        this.rotation = Math.random() * Math.PI * 2
+        this.rotationSpeed = (Math.random() - 0.5) * 0.02
+        this.speedX = (Math.random() - 0.5) * 0.3
+        this.speedY = (Math.random() - 0.5) * 0.3
+        this.color = colors[Math.floor(Math.random() * colors.length)]
+        this.shapeType = Math.floor(Math.random() * 3) // 0: triangle, 1: hexagon, 2: diamond
+        
+        // Varied opacity
+        const opacityType = Math.random()
+        if (opacityType < 0.5) {
+          this.opacity = Math.random() * 0.15 + 0.08 // Subtle (8-23%)
+        } else {
+          this.opacity = Math.random() * 0.2 + 0.15 // Medium (15-35%)
+        }
+        this.pulsePhase = Math.random() * Math.PI * 2
+        this.pulseSpeed = Math.random() * 0.02 + 0.01
+      }
+
+      update() {
+        this.x += this.speedX
+        this.y += this.speedY
+        this.rotation += this.rotationSpeed
+        this.pulsePhase += this.pulseSpeed
+
+        // Wrap around
+        if (this.x < -50) this.x = canvas.width + 50
+        if (this.x > canvas.width + 50) this.x = -50
+        if (this.y < -50) this.y = canvas.height + 50
+        if (this.y > canvas.height + 50) this.y = -50
+
+        this.currentOpacity = this.opacity + Math.sin(this.pulsePhase) * 0.1
+      }
+
+      draw() {
+        ctx.save()
+        ctx.translate(this.x, this.y)
+        ctx.rotate(this.rotation)
+        ctx.globalAlpha = this.currentOpacity
+        ctx.strokeStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.currentOpacity})`
+        ctx.lineWidth = 1.5
+        ctx.shadowBlur = 20
+        ctx.shadowColor = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.currentOpacity * 0.5})`
+
+        ctx.beginPath()
+        if (this.shapeType === 0) {
+          // Triangle
+          ctx.moveTo(0, -this.size)
+          ctx.lineTo(-this.size * 0.866, this.size * 0.5)
+          ctx.lineTo(this.size * 0.866, this.size * 0.5)
+          ctx.closePath()
+        } else if (this.shapeType === 1) {
+          // Hexagon
+          for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i
+            const x = Math.cos(angle) * this.size
+            const y = Math.sin(angle) * this.size
+            if (i === 0) ctx.moveTo(x, y)
+            else ctx.lineTo(x, y)
+          }
+          ctx.closePath()
+        } else {
+          // Diamond
+          ctx.moveTo(0, -this.size)
+          ctx.lineTo(this.size, 0)
+          ctx.lineTo(0, this.size)
+          ctx.lineTo(-this.size, 0)
+          ctx.closePath()
+        }
+        ctx.stroke()
+        ctx.shadowBlur = 0
+        ctx.restore()
+      }
+    }
+
+    // Glowing Orb class - large, slow-moving orbs
+    class GlowingOrb {
+      constructor() {
+        this.reset()
+      }
+
+      reset() {
+        // Prefer corners and center areas
+        const positionType = Math.random()
+        if (positionType < 0.3) {
+          // Corner
+          const corner = Math.floor(Math.random() * 4)
+          if (corner === 0) { this.x = 0; this.y = 0 }
+          else if (corner === 1) { this.x = canvas.width; this.y = 0 }
+          else if (corner === 2) { this.x = canvas.width; this.y = canvas.height }
+          else { this.x = 0; this.y = canvas.height }
+        } else if (positionType < 0.6) {
+          // Center area
+          this.x = canvas.width / 2 + (Math.random() - 0.5) * 300
+          this.y = canvas.height / 2 + (Math.random() - 0.5) * 300
+        } else {
+          this.x = Math.random() * canvas.width
+          this.y = Math.random() * canvas.height
+        }
+
+        this.size = Math.random() * 80 + 40
+        this.speedX = (Math.random() - 0.5) * 0.15
+        this.speedY = (Math.random() - 0.5) * 0.15
+        this.color = colors[Math.floor(Math.random() * colors.length)]
+        this.opacity = Math.random() * 0.15 + 0.05 // Very subtle
+        this.pulseSpeed = Math.random() * 0.01 + 0.005
+        this.pulsePhase = Math.random() * Math.PI * 2
+        this.pulseAmplitude = Math.random() * 0.1 + 0.05
+      }
+
+      update() {
+        this.x += this.speedX
+        this.y += this.speedY
+        this.pulsePhase += this.pulseSpeed
+
+        // Wrap around
+        if (this.x < -100) this.x = canvas.width + 100
+        if (this.x > canvas.width + 100) this.x = -100
+        if (this.y < -100) this.y = canvas.height + 100
+        if (this.y > canvas.height + 100) this.y = -100
+
+        this.currentOpacity = this.opacity + Math.sin(this.pulsePhase) * this.pulseAmplitude
+        this.currentSize = this.size + Math.sin(this.pulsePhase * 1.5) * 10
+      }
+
+      draw() {
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.currentSize)
+        gradient.addColorStop(0, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.currentOpacity})`)
+        gradient.addColorStop(0.5, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.currentOpacity * 0.5})`)
+        gradient.addColorStop(1, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, 0)`)
+
+        ctx.fillStyle = gradient
+        ctx.beginPath()
+        ctx.arc(this.x, this.y, this.currentSize, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
+
+    // Pulsing Ring class - expanding/contracting rings with multiple layers
+    class PulsingRing {
+      constructor() {
+        this.reset()
+      }
+
+      reset() {
+        // More strategic positioning - near particles or in interesting areas
+        const positionType = Math.random()
+        if (positionType < 0.4 && particles.length > 0) {
+          // Near a random particle
+          const particle = particles[Math.floor(Math.random() * particles.length)]
+          this.x = particle.x + (Math.random() - 0.5) * 100
+          this.y = particle.y + (Math.random() - 0.5) * 100
+        } else {
+          this.x = Math.random() * canvas.width
+          this.y = Math.random() * canvas.height
+        }
+        
+        this.maxRadius = Math.random() * 80 + 40
+        this.minRadius = this.maxRadius * 0.2
+        this.currentRadius = this.minRadius
+        this.speed = Math.random() * 0.8 + 0.3
+        this.color = colors[Math.floor(Math.random() * colors.length)]
+        this.opacity = Math.random() * 0.3 + 0.2 // More visible
+        this.expanding = true
+        this.life = 0
+        this.maxLife = Math.random() * 150 + 80
+        this.numRings = 2 + Math.floor(Math.random() * 2) // 2-3 concentric rings
+      }
+
+      update() {
+        this.life++
+        if (this.life > this.maxLife) {
+          this.reset()
+          this.life = 0
+        }
+
+        if (this.expanding) {
+          this.currentRadius += this.speed
+          if (this.currentRadius >= this.maxRadius) {
+            this.expanding = false
+          }
+        } else {
+          this.currentRadius -= this.speed
+          if (this.currentRadius <= this.minRadius) {
+            this.expanding = true
+          }
+        }
+
+        // Fade out more gradually, then fade in
+        const lifeProgress = this.life / this.maxLife
+        if (lifeProgress < 0.3) {
+          this.currentOpacity = this.opacity * (lifeProgress / 0.3) // Fade in
+        } else if (lifeProgress > 0.7) {
+          this.currentOpacity = this.opacity * (1 - (lifeProgress - 0.7) / 0.3) // Fade out
+        } else {
+          this.currentOpacity = this.opacity // Full opacity in middle
+        }
+      }
+
+      draw() {
+        // Draw multiple concentric rings for more visibility
+        for (let i = 0; i < this.numRings; i++) {
+          const ringRadius = this.currentRadius - (i * 15)
+          if (ringRadius < this.minRadius) continue
+          
+          const ringOpacity = this.currentOpacity * (1 - i * 0.3)
+          ctx.strokeStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${ringOpacity})`
+          ctx.lineWidth = 2 + i * 0.5
+          ctx.shadowBlur = 20
+          ctx.shadowColor = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${ringOpacity * 0.6})`
+          ctx.beginPath()
+          ctx.arc(this.x, this.y, ringRadius, 0, Math.PI * 2)
+          ctx.stroke()
+        }
+        ctx.shadowBlur = 0
+      }
+    }
+
     // Initialize graph lines - fewer, more subtle
     const numGraphLines = 2 + Math.floor(Math.random() * 2) // 2-3 lines instead of 3-6
     console.log('[AnimatedBackground] Initializing', numGraphLines, 'graph lines')
     for (let i = 0; i < numGraphLines; i++) {
       graphLines.push(new GraphLine())
+    }
+    
+    // Initialize geometric shapes
+    const numShapes = 8 + Math.floor(Math.random() * 5)
+    console.log('[AnimatedBackground] Initializing', numShapes, 'geometric shapes')
+    for (let i = 0; i < numShapes; i++) {
+      geometricShapes.push(new GeometricShape())
+    }
+    
+    // Initialize glowing orbs
+    const numOrbs = 3 + Math.floor(Math.random() * 3)
+    console.log('[AnimatedBackground] Initializing', numOrbs, 'glowing orbs')
+    for (let i = 0; i < numOrbs; i++) {
+      glowingOrbs.push(new GlowingOrb())
+    }
+    
+    // Initialize pulsing rings - more visible
+    const numRings = 5 + Math.floor(Math.random() * 4) // 5-8 rings for better visibility
+    console.log('[AnimatedBackground] Initializing', numRings, 'pulsing rings')
+    for (let i = 0; i < numRings; i++) {
+      pulsingRings.push(new PulsingRing())
     }
 
     // Animation loop
@@ -335,18 +603,6 @@ export default function AnimatedBackground() {
 
       animationFrameRef.current = requestAnimationFrame(animate)
     }
-
-    // Test: Draw a visible test pattern first to verify canvas is working
-    ctx.fillStyle = 'rgba(0, 255, 255, 0.5)'
-    ctx.fillRect(10, 10, 50, 50)
-    console.log('[AnimatedBackground] Test pattern drawn - if you see a cyan square, canvas is working')
-    
-    // Clear test pattern after a moment
-    setTimeout(() => {
-      ctx.fillStyle = 'rgba(18, 18, 18, 1)'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      console.log('[AnimatedBackground] Test pattern cleared, starting animation')
-    }, 1000)
 
     animate()
 
