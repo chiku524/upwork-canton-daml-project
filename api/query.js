@@ -86,6 +86,22 @@ export default async function handler(req, res) {
     
     if (!response.ok) {
       console.log('[api/query] Ledger returned error, forwarding status:', response.status)
+      
+      // If 404, provide helpful error message
+      if (response.status === 404) {
+        console.error('[api/query] 404 Error - Canton endpoint may not be configured')
+        console.error('[api/query] Error details:', JSON.stringify(data))
+        
+        // Return a more helpful error message
+        return res.status(404).json({
+          error: 'Canton endpoint not found',
+          message: 'The Canton participant JSON API endpoint is not configured or accessible.',
+          details: data,
+          suggestion: 'Please verify that the Canton participant has the JSON API enabled and the endpoint path is correct.',
+          endpoint: queryUrl
+        })
+      }
+      
       return res.status(response.status).json(data)
     }
 
