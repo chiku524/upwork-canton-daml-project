@@ -192,7 +192,7 @@ export default function AnimatedBackground() {
         
         this.amplitude = 20 + Math.random() * 80 // Smaller amplitude
         this.frequency = 0.003 + Math.random() * 0.015 // Lower frequency for smoother waves
-        this.color = getColor('primary')
+        this.color = getColor('secondary')
         
         // Much more subtle opacity - make them less distracting
         this.opacity = Math.random() * 0.12 + 0.05 // 5-17% - very subtle
