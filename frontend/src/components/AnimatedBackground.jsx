@@ -109,20 +109,26 @@ export default function AnimatedBackground() {
       }
 
       draw() {
+        // Add subtle trail effect
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 2)
+        gradient.addColorStop(0, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.currentOpacity})`)
+        gradient.addColorStop(0.5, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.currentOpacity * 0.5})`)
+        gradient.addColorStop(1, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, 0)`)
+
         ctx.beginPath()
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.currentOpacity})`
+        ctx.fillStyle = gradient
         ctx.fill()
 
         // Glow effect
-        ctx.shadowBlur = 10
-        ctx.shadowColor = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.currentOpacity})`
+        ctx.shadowBlur = 8
+        ctx.shadowColor = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.currentOpacity * 0.6})`
         ctx.fill()
         ctx.shadowBlur = 0
       }
     }
 
-    // Graph line class for market trend visualization
+    // Graph line class for market trend visualization - more dynamic and less distracting
     class GraphLine {
       constructor() {
         this.reset()
@@ -130,40 +136,45 @@ export default function AnimatedBackground() {
 
       reset() {
         this.points = []
-        this.numPoints = 20 + Math.floor(Math.random() * 30)
+        this.numPoints = 15 + Math.floor(Math.random() * 20) // Fewer points for smoother lines
         
-        // More dynamic positioning - some start off-screen, some in center
+        // More dynamic positioning - prefer edges and corners
         const positionType = Math.random()
-        if (positionType < 0.3) {
+        if (positionType < 0.4) {
           // Start from edges
-          this.startX = Math.random() < 0.5 ? -50 : canvas.width + 50
-          this.startY = Math.random() * canvas.height
-        } else if (positionType < 0.6) {
-          // Start from center area
-          this.startX = canvas.width / 2 + (Math.random() - 0.5) * 200
-          this.startY = canvas.height / 2 + (Math.random() - 0.5) * 200
+          const edge = Math.floor(Math.random() * 4)
+          if (edge === 0) { // Top
+            this.startX = Math.random() * canvas.width
+            this.startY = -50
+          } else if (edge === 1) { // Right
+            this.startX = canvas.width + 50
+            this.startY = Math.random() * canvas.height
+          } else if (edge === 2) { // Bottom
+            this.startX = Math.random() * canvas.width
+            this.startY = canvas.height + 50
+          } else { // Left
+            this.startX = -50
+            this.startY = Math.random() * canvas.height
+          }
         } else {
-          // Random position
           this.startX = Math.random() * canvas.width
           this.startY = Math.random() * canvas.height
         }
         
-        this.amplitude = 30 + Math.random() * 120
-        this.frequency = 0.005 + Math.random() * 0.025
+        this.amplitude = 20 + Math.random() * 80 // Smaller amplitude
+        this.frequency = 0.003 + Math.random() * 0.015 // Lower frequency for smoother waves
         this.color = colors[Math.floor(Math.random() * colors.length)]
         
-        // Varied opacity for graph lines
-        const opacityType = Math.random()
-        if (opacityType < 0.4) {
-          this.opacity = Math.random() * 0.15 + 0.08 // Subtle (8-23%)
-        } else if (opacityType < 0.8) {
-          this.opacity = Math.random() * 0.2 + 0.2 // Medium (20-40%)
-        } else {
-          this.opacity = Math.random() * 0.15 + 0.35 // More visible (35-50%)
-        }
+        // Much more subtle opacity - make them less distracting
+        this.opacity = Math.random() * 0.12 + 0.05 // 5-17% - very subtle
+        this.baseOpacity = this.opacity
         
-        this.speed = 0.1 + Math.random() * 0.5
+        this.speed = 0.05 + Math.random() * 0.25 // Slower movement
         this.offset = Math.random() * Math.PI * 2
+        this.life = 0
+        this.maxLife = Math.random() * 300 + 200 // Lines fade in/out
+        this.fadeIn = true
+      }
 
         // Generate points for smooth curve
         for (let i = 0; i < this.numPoints; i++) {
@@ -175,43 +186,71 @@ export default function AnimatedBackground() {
       }
 
       update() {
-        this.offset += this.speed * 0.01
+        this.life++
+        this.offset += this.speed * 0.008 // Slower wave motion
 
-        // Update points to create wave motion
+        // Fade in/out effect for less distraction
+        const lifeProgress = this.life / this.maxLife
+        if (lifeProgress < 0.2) {
+          this.opacity = this.baseOpacity * (lifeProgress / 0.2) // Fade in
+        } else if (lifeProgress > 0.8) {
+          this.opacity = this.baseOpacity * (1 - (lifeProgress - 0.8) / 0.2) // Fade out
+        } else {
+          this.opacity = this.baseOpacity
+        }
+
+        // Reset when faded out
+        if (this.life > this.maxLife) {
+          this.reset()
+          this.life = 0
+        }
+
+        // Update points to create smoother, more organic wave motion
         this.points.forEach((point, i) => {
-          point.y = this.startY + Math.sin(i * this.frequency + this.offset) * this.amplitude
+          // Use multiple sine waves for more organic movement
+          const wave1 = Math.sin(i * this.frequency + this.offset) * this.amplitude
+          const wave2 = Math.sin(i * this.frequency * 2 + this.offset * 1.5) * (this.amplitude * 0.3)
+          point.y = this.startY + wave1 + wave2
           point.x += this.speed
 
-          // Wrap around
-          if (point.x > canvas.width) {
-            point.x = 0
-            this.startX = 0
+          // Wrap around smoothly
+          if (point.x > canvas.width + 50) {
+            point.x = -50
+            this.startX = -50
+          } else if (point.x < -50) {
+            point.x = canvas.width + 50
+            this.startX = canvas.width + 50
           }
         })
       }
 
       draw() {
+        // Only draw if opacity is significant
+        if (this.opacity < 0.02) return
+
         ctx.beginPath()
         ctx.moveTo(this.points[0].x, this.points[0].y)
 
-        // Draw smooth curve through points
+        // Draw smoother curve through points with better interpolation
         for (let i = 1; i < this.points.length; i++) {
           const prev = this.points[i - 1]
           const curr = this.points[i]
           const next = this.points[i + 1] || curr
 
-          const cp1x = prev.x + (curr.x - prev.x) / 2
-          const cp1y = prev.y
-          const cp2x = curr.x - (next.x - curr.x) / 2
-          const cp2y = curr.y
+          // Better control points for smoother curves
+          const cp1x = prev.x + (curr.x - prev.x) * 0.6
+          const cp1y = prev.y + (curr.y - prev.y) * 0.6
+          const cp2x = curr.x - (next.x - curr.x) * 0.6
+          const cp2y = curr.y - (next.y - curr.y) * 0.6
 
           ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, curr.x, curr.y)
         }
 
+        // Thinner, more subtle lines
         ctx.strokeStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.opacity})`
-        ctx.lineWidth = 1.5
-        ctx.shadowBlur = 15
-        ctx.shadowColor = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.opacity * 0.5})`
+        ctx.lineWidth = 1
+        ctx.shadowBlur = 10
+        ctx.shadowColor = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.opacity * 0.3})`
         ctx.stroke()
         ctx.shadowBlur = 0
       }
@@ -225,8 +264,8 @@ export default function AnimatedBackground() {
       particles.push(new Particle())
     }
 
-    // Initialize graph lines
-    const numGraphLines = 3 + Math.floor(Math.random() * 3)
+    // Initialize graph lines - fewer, more subtle
+    const numGraphLines = 2 + Math.floor(Math.random() * 2) // 2-3 lines instead of 3-6
     console.log('[AnimatedBackground] Initializing', numGraphLines, 'graph lines')
     for (let i = 0; i < numGraphLines; i++) {
       graphLines.push(new GraphLine())
@@ -238,7 +277,8 @@ export default function AnimatedBackground() {
 
       // Clear canvas with slight fade for trail effect
       // Use a darker base to ensure particles stand out
-      ctx.fillStyle = 'rgba(18, 18, 18, 0.3)'
+      // Slightly more fade for smoother trails
+      ctx.fillStyle = 'rgba(18, 18, 18, 0.25)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       // Update and draw all elements in layers
@@ -279,15 +319,15 @@ export default function AnimatedBackground() {
           const dy = particle.y - otherParticle.y
           const distance = Math.sqrt(dx * dx + dy * dy)
 
-          if (distance < 150) {
-            // Varied connection opacity based on distance
-            const baseOpacity = (1 - distance / 150)
-            const opacity = baseOpacity * (0.1 + Math.random() * 0.1) // 10-20% range
+          if (distance < 120) {
+            // Varied connection opacity based on distance - more subtle
+            const baseOpacity = (1 - distance / 120)
+            const opacity = baseOpacity * (0.05 + Math.random() * 0.08) // 5-13% range - more subtle
             ctx.beginPath()
             ctx.moveTo(particle.x, particle.y)
             ctx.lineTo(otherParticle.x, otherParticle.y)
             ctx.strokeStyle = `rgba(100, 200, 255, ${opacity})`
-            ctx.lineWidth = 0.5 + Math.random() * 0.5
+            ctx.lineWidth = 0.3 + Math.random() * 0.4
             ctx.stroke()
           }
         })
