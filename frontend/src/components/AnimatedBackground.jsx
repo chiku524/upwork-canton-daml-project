@@ -425,7 +425,7 @@ export default function AnimatedBackground() {
         this.size = Math.random() * 80 + 40
         this.speedX = (Math.random() - 0.5) * 0.15
         this.speedY = (Math.random() - 0.5) * 0.15
-        this.color = getColor('primary')
+        this.color = getColor('subtle')
         this.opacity = Math.random() * 0.15 + 0.05 // Very subtle
         this.pulseSpeed = Math.random() * 0.01 + 0.005
         this.pulsePhase = Math.random() * Math.PI * 2
@@ -479,15 +479,15 @@ export default function AnimatedBackground() {
           this.y = Math.random() * canvas.height
         }
         
-        this.maxRadius = Math.random() * 80 + 40
-        this.minRadius = this.maxRadius * 0.2
+        this.maxRadius = Math.random() * 100 + 50
+        this.minRadius = this.maxRadius * 0.3
         this.currentRadius = this.minRadius
-        this.speed = Math.random() * 0.8 + 0.3
-        this.color = getColor('primary')
-        this.opacity = Math.random() * 0.3 + 0.2 // More visible
+        this.speed = Math.random() * 0.2 + 0.1 // Much slower - was 0.3-1.1, now 0.1-0.3
+        this.color = getColor('accent')
+        this.opacity = Math.random() * 0.15 + 0.1 // More subtle - was 0.2-0.5, now 0.1-0.25
         this.expanding = true
         this.life = 0
-        this.maxLife = Math.random() * 150 + 80
+        this.maxLife = Math.random() * 400 + 300 // Longer life - was 80-230, now 300-700
         this.numRings = 2 + Math.floor(Math.random() * 2) // 2-3 concentric rings
       }
 
@@ -623,7 +623,9 @@ export default function AnimatedBackground() {
             ctx.beginPath()
             ctx.moveTo(particle.x, particle.y)
             ctx.lineTo(otherParticle.x, otherParticle.y)
-            ctx.strokeStyle = `rgba(100, 200, 255, ${opacity})`
+            // Use accent palette color for connections
+            const connectionColor = getColor('accent')
+            ctx.strokeStyle = `rgba(${connectionColor.r}, ${connectionColor.g}, ${connectionColor.b}, ${opacity})`
             ctx.lineWidth = 0.3 + Math.random() * 0.4
             ctx.stroke()
           }
