@@ -31,10 +31,12 @@ export default function AnimatedBackground() {
     let graphLines = []
     let time = 0
 
-    // Set canvas size
+    // Set canvas size - use getBoundingClientRect to match CSS sizing
     const resizeCanvas = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
+      const rect = canvas.getBoundingClientRect()
+      canvas.width = rect.width
+      canvas.height = rect.height
+      console.log('[AnimatedBackground] Canvas resized to:', canvas.width, 'x', canvas.height)
     }
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
@@ -55,9 +57,8 @@ export default function AnimatedBackground() {
       }
 
       reset() {
-        const rect = canvas.getBoundingClientRect()
-        this.x = Math.random() * rect.width
-        this.y = Math.random() * rect.height
+        this.x = Math.random() * canvas.width
+        this.y = Math.random() * canvas.height
         this.size = Math.random() * 2 + 1
         this.speedX = (Math.random() - 0.5) * 0.5
         this.speedY = (Math.random() - 0.5) * 0.5
@@ -73,11 +74,10 @@ export default function AnimatedBackground() {
         this.pulsePhase += this.pulseSpeed
 
         // Wrap around edges
-        const rect = canvas.getBoundingClientRect()
-        if (this.x < 0) this.x = rect.width
-        if (this.x > rect.width) this.x = 0
-        if (this.y < 0) this.y = rect.height
-        if (this.y > rect.height) this.y = 0
+        if (this.x < 0) this.x = canvas.width
+        if (this.x > canvas.width) this.x = 0
+        if (this.y < 0) this.y = canvas.height
+        if (this.y > canvas.height) this.y = 0
 
         // Pulsing opacity
         this.currentOpacity = this.opacity + Math.sin(this.pulsePhase) * 0.1
@@ -104,11 +104,10 @@ export default function AnimatedBackground() {
       }
 
       reset() {
-        const rect = canvas.getBoundingClientRect()
         this.points = []
         this.numPoints = 20 + Math.floor(Math.random() * 30)
-        this.startX = Math.random() * rect.width
-        this.startY = Math.random() * rect.height
+        this.startX = Math.random() * canvas.width
+        this.startY = Math.random() * canvas.height
         this.amplitude = 50 + Math.random() * 100
         this.frequency = 0.01 + Math.random() * 0.02
         this.color = colors[Math.floor(Math.random() * colors.length)]
@@ -117,10 +116,9 @@ export default function AnimatedBackground() {
         this.offset = Math.random() * Math.PI * 2
 
         // Generate points for smooth curve
-        const rect = canvas.getBoundingClientRect()
         for (let i = 0; i < this.numPoints; i++) {
           this.points.push({
-            x: this.startX + i * (rect.width / this.numPoints),
+            x: this.startX + i * (canvas.width / this.numPoints),
             y: this.startY
           })
         }
@@ -135,8 +133,7 @@ export default function AnimatedBackground() {
           point.x += this.speed
 
           // Wrap around
-          const rect = canvas.getBoundingClientRect()
-          if (point.x > rect.width) {
+          if (point.x > canvas.width) {
             point.x = 0
             this.startX = 0
           }
@@ -171,10 +168,8 @@ export default function AnimatedBackground() {
     }
 
     // Initialize particles - ensure minimum visibility
-    // Use canvas dimensions from getBoundingClientRect for accurate sizing
-    const rect = canvas.getBoundingClientRect()
-    const numParticles = Math.max(50, Math.floor((rect.width * rect.height) / 10000))
-    console.log('[AnimatedBackground] Canvas size:', rect.width, 'x', rect.height)
+    const numParticles = Math.max(50, Math.floor((canvas.width * canvas.height) / 10000))
+    console.log('[AnimatedBackground] Canvas size:', canvas.width, 'x', canvas.height)
     console.log('[AnimatedBackground] Initializing', numParticles, 'particles')
     for (let i = 0; i < numParticles; i++) {
       particles.push(new Particle())
@@ -193,9 +188,8 @@ export default function AnimatedBackground() {
 
       // Clear canvas with slight fade for trail effect
       // Use a darker base to ensure particles stand out
-      const rect = canvas.getBoundingClientRect()
       ctx.fillStyle = 'rgba(18, 18, 18, 0.2)'
-      ctx.fillRect(0, 0, rect.width, rect.height)
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       // Update and draw graph lines
       graphLines.forEach(line => {
