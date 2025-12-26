@@ -52,8 +52,6 @@ export default function AnimatedBackground() {
     class Particle {
       constructor() {
         this.reset()
-        this.y = Math.random() * canvas.height
-        this.opacity = Math.random() * 0.3 + 0.1
       }
 
       reset() {
@@ -186,7 +184,8 @@ export default function AnimatedBackground() {
       time += 0.01
 
       // Clear canvas with slight fade for trail effect
-      ctx.fillStyle = 'rgba(18, 18, 18, 0.15)'
+      // Use a darker base to ensure particles stand out
+      ctx.fillStyle = 'rgba(18, 18, 18, 0.2)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       // Update and draw graph lines
