@@ -112,7 +112,8 @@ export default async function handler(req, res) {
         message: 'Tried multiple endpoint formats but none responded successfully.',
         triedEndpoints: possibleEndpoints,
         lastError: lastError,
-        suggestion: 'Please verify the Canton participant JSON API is enabled and the endpoint path is correct. Check the OpenAPI docs at the base URL + /docs/openapi'
+        suggestion: 'Please verify the Canton participant JSON API is enabled and the endpoint path is correct. Check the OpenAPI docs at the base URL + /docs/openapi',
+        note: 'This is a 404 from the Vercel function - the Canton participant endpoints are not accessible. Please verify JSON API is enabled on the participant.'
       })
     }
     

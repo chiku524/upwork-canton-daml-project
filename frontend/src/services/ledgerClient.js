@@ -150,6 +150,13 @@ class LedgerClient {
             console.error('Vercel API route not found. Commands require API routes to be configured.')
             throw new Error('API routes not configured. Please set up Vercel API routes. See docs/VERCEL_FIX.md for instructions.')
           }
+          // For 500 errors, provide more helpful message
+          if (apiError.response?.status === 500) {
+            const errorData = apiError.response?.data || {}
+            console.error('Server error from API route:', errorData)
+            const errorMessage = errorData.message || errorData.error || 'The ledger encountered an issue. Please try again later.'
+            throw new Error(errorMessage)
+          }
           throw apiError
         }
       }, {
