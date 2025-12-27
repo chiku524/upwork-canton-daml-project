@@ -80,21 +80,26 @@ class LedgerClient {
           } else {
             return []
           }
-        } catch (apiError) {
-          // If Vercel API route returns 404, API routes aren't configured
-          if (this.useProxy && apiError.response?.status === 404) {
-            console.warn('Vercel API route not found. Please configure API routes. See docs/VERCEL_FIX.md')
-            // Return empty array so app doesn't break
-            // User will see empty state and API status banner
-            return []
-          }
-          // For other client errors (4xx), return empty array
-          if (apiError.response?.status >= 400 && apiError.response?.status < 500) {
-            return [] // Client errors - return empty instead of breaking
-          }
-          // For server errors (5xx) or network errors, throw to trigger retry
-          throw apiError
-        }
+            } catch (apiError) {
+              // If Vercel API route returns 404, API routes aren't configured
+              if (this.useProxy && apiError.response?.status === 404) {
+                console.warn('Vercel API route not found. Please configure API routes. See docs/VERCEL_FIX.md')
+                // Return empty array so app doesn't break
+                // User will see empty state and API status banner
+                return []
+              }
+              // For 404 errors from Canton, return empty array (endpoint not found)
+              if (apiError.response?.status === 404) {
+                console.warn('Canton endpoint not found. Returning empty results.')
+                return []
+              }
+              // For other client errors (4xx), return empty array
+              if (apiError.response?.status >= 400 && apiError.response?.status < 500) {
+                return [] // Client errors - return empty instead of breaking
+              }
+              // For server errors (5xx) or network errors, throw to trigger retry
+              throw apiError
+            }
       }, {
         maxRetries: 2,
         initialDelay: 1000,

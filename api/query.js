@@ -65,6 +65,7 @@ export default async function handler(req, res) {
     // Try each endpoint until one works
     let lastError = null
     let response = null
+    let usedEndpoint = null
     
     for (const queryUrl of possibleEndpoints) {
       try {
@@ -86,6 +87,7 @@ export default async function handler(req, res) {
         // If we get a non-404 response, this endpoint might work
         if (response.status !== 404) {
           console.log('[api/query] Endpoint responded (not 404):', queryUrl)
+          usedEndpoint = queryUrl
           break
         }
         
@@ -145,7 +147,7 @@ export default async function handler(req, res) {
           message: 'The Canton participant JSON API endpoint is not configured or accessible.',
           details: data,
           suggestion: 'Please verify that the Canton participant has the JSON API enabled and the endpoint path is correct.',
-          endpoint: queryUrl
+          endpoint: usedEndpoint || 'unknown'
         })
       }
       

@@ -119,10 +119,25 @@ export default async function handler(req, res) {
       })
     }
     
-    const data = await response.json()
+    // Check if response is JSON before parsing
+    const contentType = response.headers.get('content-type')
+    console.log('[api/command] Response content-type:', contentType)
+    console.log('[api/command] Response status:', response.status)
     console.log('[api/command] Successful response from:', usedEndpoint)
     
+    let data
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json()
+    } else {
+      const text = await response.text()
+      console.log('[api/command] Non-JSON response:', text.substring(0, 500))
+      data = { error: 'Non-JSON response', text: text.substring(0, 500) }
+    }
+    
+    console.log('[api/command] Ledger response data:', JSON.stringify(data).substring(0, 200))
+    
     if (!response.ok) {
+      console.log('[api/command] Ledger returned error, forwarding status:', response.status)
       return res.status(response.status).json(data)
     }
 
