@@ -126,12 +126,21 @@ export default async function handler(req, res) {
     console.log('[api/command] Successful response from:', usedEndpoint)
     
     let data
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json()
-    } else {
-      const text = await response.text()
-      console.log('[api/command] Non-JSON response:', text.substring(0, 500))
-      data = { error: 'Non-JSON response', text: text.substring(0, 500) }
+    try {
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json()
+      } else {
+        const text = await response.text()
+        console.log('[api/command] Non-JSON response:', text.substring(0, 500))
+        data = { error: 'Non-JSON response', text: text.substring(0, 500) }
+      }
+    } catch (parseError) {
+      console.error('[api/command] Error parsing response:', parseError)
+      data = { 
+        error: 'Failed to parse response', 
+        message: parseError.message,
+        status: response.status 
+      }
     }
     
     console.log('[api/command] Ledger response data:', JSON.stringify(data).substring(0, 200))
@@ -144,9 +153,11 @@ export default async function handler(req, res) {
     return res.status(200).json(data)
   } catch (error) {
     console.error('[api/command] Command proxy error:', error)
+    console.error('[api/command] Error stack:', error.stack)
     return res.status(500).json({ 
       error: 'Failed to submit command',
-      message: error.message 
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     })
   }
 }
