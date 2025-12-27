@@ -70,12 +70,12 @@ export default async function handler(req, res) {
       try {
         console.log('[api/query] Trying endpoint:', queryUrl)
         response = await fetch(queryUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(req.headers.authorization && { Authorization: req.headers.authorization }),
-      },
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...(req.headers.authorization && { Authorization: req.headers.authorization }),
+          },
           body: JSON.stringify(requestBody),
           redirect: 'follow', // Follow redirects if any
         })
