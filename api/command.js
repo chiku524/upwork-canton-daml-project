@@ -56,10 +56,20 @@ export default async function handler(req, res) {
     console.log('[api/command] Trying endpoints:', possibleEndpoints)
     console.log('[api/command] Request body:', JSON.stringify(req.body))
     
-    // Format request body - v2 might expect different format
-    // Try both formats: direct commands object and wrapped format
+    // Extract commands object and party from request
+    const commandsObj = req.body.commands || req.body
+    const party = commandsObj.party || (Array.isArray(commandsObj.actAs) ? commandsObj.actAs[0] : null)
+    
+    // Format request body for different API versions
+    // v1 expects: { commands: { party, applicationId, commandId, list } }
     const requestBodyV1 = req.body
-    const requestBodyV2 = req.body.commands || req.body
+    
+    // v2 expects: { actAs: [party], commands: { party, applicationId, commandId, list } }
+    // OR: { actAs: [party], party, applicationId, commandId, list } (unwrapped)
+    const requestBodyV2 = {
+      actAs: party ? [party] : [],
+      ...commandsObj
+    }
     
     // Try each endpoint until one works
     let lastError = null
@@ -73,6 +83,9 @@ export default async function handler(req, res) {
         // Use v2 format for v2 endpoints, v1 format for v1 endpoints
         const isV2Endpoint = commandUrl.includes('/v2/')
         const requestBody = isV2Endpoint ? requestBodyV2 : requestBodyV1
+        
+        console.log('[api/command] Using format:', isV2Endpoint ? 'v2' : 'v1')
+        console.log('[api/command] Formatted request body:', JSON.stringify(requestBody).substring(0, 500))
         
         response = await fetch(commandUrl, {
           method: 'POST',
