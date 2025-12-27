@@ -46,10 +46,14 @@ export default async function handler(req, res) {
     
     // Try multiple endpoint formats - Canton 3.4 may use v2, but v1 might also work
     // Try endpoints in order: v2/query, v1/query, query
+    // Note: Query endpoints may not be enabled on this Canton participant
+    // If all return 404, the participant may only support commands, not queries
     const possibleEndpoints = [
       `${baseUrl}/v2/query`,
       `${baseUrl}/v1/query`,
       `${baseUrl}/query`,
+      `${baseUrl}/v2/contracts/search`, // Alternative v2 endpoint
+      `${baseUrl}/v1/contracts/search`, // Alternative v1 endpoint
     ]
     
     console.log('[api/query] Trying endpoints:', possibleEndpoints)
