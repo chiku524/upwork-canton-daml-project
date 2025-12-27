@@ -65,10 +65,10 @@ export default async function handler(req, res) {
     const requestBodyV1 = req.body
     
     // v2 expects: { actAs: [party], commands: { party, applicationId, commandId, list } }
-    // OR: { actAs: [party], party, applicationId, commandId, list } (unwrapped)
+    // The error "Missing required field at 'commands'" indicates v2 still wants commands wrapped
     const requestBodyV2 = {
       actAs: party ? [party] : [],
-      ...commandsObj
+      commands: commandsObj
     }
     
     // Try each endpoint until one works
