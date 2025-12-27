@@ -41,22 +41,86 @@ export default async function handler(req, res) {
 
   try {
     // Ensure we're using HTTPS and the correct endpoint
-    const commandUrl = `${LEDGER_URL}/v1/command`
-    console.log('[api/command] Fetching from ledger:', commandUrl)
+    // Remove trailing slash from LEDGER_URL if present
+    const baseUrl = LEDGER_URL.replace(/\/$/, '')
+    
+    // Try multiple endpoint formats - Canton 3.4 may use different formats
+    // v2 uses /v2/commands/submit-and-wait, v1 uses /v1/command
+    const possibleEndpoints = [
+      `${baseUrl}/v2/commands/submit-and-wait`,
+      `${baseUrl}/v1/command`,
+      `${baseUrl}/v2/command`,
+      `${baseUrl}/command`,
+    ]
+    
+    console.log('[api/command] Trying endpoints:', possibleEndpoints)
     console.log('[api/command] Request body:', JSON.stringify(req.body))
     
-    const response = await fetch(commandUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(req.headers.authorization && { Authorization: req.headers.authorization }),
-      },
-      body: JSON.stringify(req.body),
-      redirect: 'follow', // Follow redirects if any
-    })
-
+    // Format request body - v2 might expect different format
+    // Try both formats: direct commands object and wrapped format
+    const requestBodyV1 = req.body
+    const requestBodyV2 = req.body.commands || req.body
+    
+    // Try each endpoint until one works
+    let lastError = null
+    let response = null
+    let usedEndpoint = null
+    
+    for (const commandUrl of possibleEndpoints) {
+      try {
+        console.log('[api/command] Trying endpoint:', commandUrl)
+        
+        // Use v2 format for v2 endpoints, v1 format for v1 endpoints
+        const isV2Endpoint = commandUrl.includes('/v2/')
+        const requestBody = isV2Endpoint ? requestBodyV2 : requestBodyV1
+        
+        response = await fetch(commandUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...(req.headers.authorization && { Authorization: req.headers.authorization }),
+          },
+          body: JSON.stringify(requestBody),
+          redirect: 'follow', // Follow redirects if any
+        })
+        
+        console.log('[api/command] Response status:', response.status)
+        
+        // If we get a non-404 response, this endpoint might work
+        if (response.status !== 404) {
+          console.log('[api/command] Endpoint responded (not 404):', commandUrl)
+          usedEndpoint = commandUrl
+          break
+        }
+        
+        // If 404, try next endpoint
+        const errorData = await response.json().catch(() => ({}))
+        lastError = { endpoint: commandUrl, status: response.status, data: errorData }
+        console.log('[api/command] Endpoint returned 404, trying next:', commandUrl)
+        response = null
+      } catch (error) {
+        console.log('[api/command] Error with endpoint:', commandUrl, error.message)
+        lastError = { endpoint: commandUrl, error: error.message }
+        response = null
+        // Continue to next endpoint
+      }
+    }
+    
+    // If all endpoints failed, return error
+    if (!response) {
+      console.error('[api/command] All endpoints failed. Last error:', lastError)
+      return res.status(404).json({
+        error: 'Canton endpoint not found',
+        message: 'Tried multiple endpoint formats but none responded successfully.',
+        triedEndpoints: possibleEndpoints,
+        lastError: lastError,
+        suggestion: 'Please verify the Canton participant JSON API is enabled and the endpoint path is correct. Check the OpenAPI docs at the base URL + /docs/openapi'
+      })
+    }
+    
     const data = await response.json()
+    console.log('[api/command] Successful response from:', usedEndpoint)
     
     if (!response.ok) {
       return res.status(response.status).json(data)

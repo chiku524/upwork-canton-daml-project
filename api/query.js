@@ -43,8 +43,16 @@ export default async function handler(req, res) {
     // Ensure we're using HTTPS and the correct endpoint
     // Remove trailing slash from LEDGER_URL if present
     const baseUrl = LEDGER_URL.replace(/\/$/, '')
-    const queryUrl = `${baseUrl}/v1/query`
-    console.log('[api/query] Fetching from ledger:', queryUrl)
+    
+    // Try multiple endpoint formats - Canton 3.4 may use v2, but v1 might also work
+    // Try endpoints in order: v2/query, v1/query, query
+    const possibleEndpoints = [
+      `${baseUrl}/v2/query`,
+      `${baseUrl}/v1/query`,
+      `${baseUrl}/query`,
+    ]
+    
+    console.log('[api/query] Trying endpoints:', possibleEndpoints)
     console.log('[api/query] Request body:', JSON.stringify(req.body))
     
     // Ensure request body matches Canton JSON API format
@@ -54,19 +62,58 @@ export default async function handler(req, res) {
     }
     console.log('[api/query] Formatted request body:', JSON.stringify(requestBody))
     
-    const response = await fetch(queryUrl, {
+    // Try each endpoint until one works
+    let lastError = null
+    let response = null
+    
+    for (const queryUrl of possibleEndpoints) {
+      try {
+        console.log('[api/query] Trying endpoint:', queryUrl)
+        response = await fetch(queryUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         ...(req.headers.authorization && { Authorization: req.headers.authorization }),
       },
-      body: JSON.stringify(requestBody),
-      redirect: 'follow', // Follow redirects if any
-    })
+          body: JSON.stringify(requestBody),
+          redirect: 'follow', // Follow redirects if any
+        })
+        
+        console.log('[api/query] Response URL:', response.url) // Log final URL after redirects
+        console.log('[api/query] Response status:', response.status)
+        
+        // If we get a non-404 response, this endpoint might work
+        if (response.status !== 404) {
+          console.log('[api/query] Endpoint responded (not 404):', queryUrl)
+          break
+        }
+        
+        // If 404, try next endpoint
+        const errorData = await response.json().catch(() => ({}))
+        lastError = { endpoint: queryUrl, status: response.status, data: errorData }
+        console.log('[api/query] Endpoint returned 404, trying next:', queryUrl)
+        response = null
+      } catch (error) {
+        console.log('[api/query] Error with endpoint:', queryUrl, error.message)
+        lastError = { endpoint: queryUrl, error: error.message }
+        response = null
+        // Continue to next endpoint
+      }
+    }
     
-    console.log('[api/query] Response URL:', response.url) // Log final URL after redirects
-    console.log('[api/query] Response status:', response.status)
+    // If all endpoints failed, return error
+    if (!response) {
+      console.error('[api/query] All endpoints failed. Last error:', lastError)
+      return res.status(404).json({
+        error: 'Canton endpoint not found',
+        message: 'Tried multiple endpoint formats but none responded successfully.',
+        triedEndpoints: possibleEndpoints,
+        lastError: lastError,
+        suggestion: 'Please verify the Canton participant JSON API is enabled and the endpoint path is correct. Check the OpenAPI docs at the base URL + /docs/openapi'
+      })
+    }
+    
     console.log('[api/query] Response headers:', Object.fromEntries(response.headers.entries()))
 
     // Check if response is JSON before parsing
