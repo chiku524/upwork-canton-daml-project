@@ -88,7 +88,25 @@ The error shows `http://` instead of `https://`, suggesting Canton might be expe
 - ✅ Vercel API routes: Working
 - ✅ Function invocation: Working
 - ✅ Request formatting: Correct
-- ❌ Canton endpoint: 404 (endpoint not found)
+- ✅ Endpoint fallback logic: Implemented (tries v2, v1, and base paths)
+- ❌ Canton endpoint: 404 (endpoint not found - all formats tried)
+
+## Recent Updates
+
+The API routes now try multiple endpoint formats:
+- **Query endpoints tried:**
+  - `/v2/query` (Canton 3.4 format)
+  - `/v1/query` (Legacy format)
+  - `/query` (Base format)
+  
+- **Command endpoints tried:**
+  - `/v2/commands/submit-and-wait` (Canton 3.4 format)
+  - `/v1/command` (Legacy format)
+  - `/v2/command` (Alternative v2 format)
+  - `/command` (Base format)
+
+- **Diagnostic endpoint:**
+  - `/api/openapi` - Fetches OpenAPI specification to identify correct endpoints
 
 ## Temporary Workaround
 
